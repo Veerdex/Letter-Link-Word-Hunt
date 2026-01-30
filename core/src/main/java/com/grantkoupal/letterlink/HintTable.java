@@ -2,6 +2,7 @@ package com.grantkoupal.letterlink;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
@@ -134,22 +135,23 @@ public class HintTable extends Agent {
         String word;
         if(!wordsFound.get(y + (int)scroll)){
             word = hiddenWord;
+            font.setColor(Color.WHITE);
         } else {
+            font.setColor(Color.GOLD);
             word = validWords.get(y + (int)scroll);
         }
         float yPos = (y - scroll % 1) * 150 * scale * fontScale;
 
         if(word.charAt(0) == '?'){
             for(int i = 0; i < validWords.get(y + (int)scroll).length(); i++){
-                drawTile(yPos, i * 150 * scale * fontScale, "" + word.charAt(i), sb);
+                drawTile(yPos, i * 125 * scale * fontScale, "" + word.charAt(i), sb);
             }
         } else {
             for(int i = 0; i < word.length(); i++){
-                drawTile(yPos, i * 150 * scale * fontScale, "" + word.charAt(i), sb);
+                drawTile(yPos, i * 125 * scale * fontScale, "" + word.charAt(i), sb);
             }
         }
-
-
+        font.setColor(Color.WHITE);
     }
 
     private void drawTile(float y, float x, String letter, SpriteBatch sb){

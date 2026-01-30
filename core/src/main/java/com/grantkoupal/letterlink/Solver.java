@@ -72,9 +72,20 @@ public class Solver {
     /**
      * Sets the board layout and validates rectangular shape.
      *
-     * @param newBoard incoming board layout
+     * @param w board width
+     * @param h board height
+     * @param letters letters in board
      */
-    public static void setBoard(List<List<Character>> newBoard){
+    public static void setBoard(int w, int h, String letters){
+
+        List<List<Character>> newBoard = new ArrayList<List<Character>>();
+        for (int x = 0; x < w; x++) {
+            newBoard.add(new ArrayList<>());
+            for (int y = 0; y < h; y++) {
+                newBoard.get(x).add(letters.charAt(x * w + y));
+            }
+        }
+
         int width = newBoard.get(0).size();
         int height = newBoard.size();
 
@@ -176,7 +187,8 @@ public class Solver {
     /**
      * Calculates total score based on word lengths.
      **/
-    private static void calculatePoints(){
+    public static int calculatePoints(){
+        points = 0;
         for(String a : treasureWords){
             switch(a.length()){
                 case 3 : points += 100; wordLengthAmount[3]++; break;
@@ -204,6 +216,8 @@ public class Solver {
                 case 25 : points += 10600; wordLengthAmount[25]++;
             }
         }
+
+        return points;
     }
 
     /**
@@ -340,5 +354,13 @@ public class Solver {
             }
         }
         return '!';
+    }
+
+    public static List<List<Character>> getBoard(){
+        return board;
+    }
+
+    public static List<String> getTreasureWords(){
+        return treasureWords;
     }
 }

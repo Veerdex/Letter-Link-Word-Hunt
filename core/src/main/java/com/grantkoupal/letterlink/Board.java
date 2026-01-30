@@ -14,8 +14,9 @@ import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
 import com.grantkoupal.letterlink.quantum.*;
+import com.grantkoupal.letterlink.quantum.Manager;
+import com.grantkoupal.letterlink.quantum.Page;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,6 +43,8 @@ public class Board extends Agent {
     // Board Structure
     private int width;
     private int height;
+    private float boardBackgroundScale = 1;
+    private int boardValue = 0;
     private List<List<Character>> board = new ArrayList<>();
     private List<Tile> tiles = new ArrayList<>();
     private List<String> wordsInBoard = new ArrayList<>();
@@ -66,12 +69,12 @@ public class Board extends Agent {
 
     // ========== Constructor ==========
 
-    public Board(int width, int height, String letters, TextureSet textureSet) {
+    public Board(int width, int height, TextureSet textureSet, int minBoardValue, int power) {
         initializeFont();
         loadTextures(textureSet);
-        validateAndSetDimensions(width, height, letters);
-        initializeBoard(letters);
-        findValidWords();
+        setDimensions(width, height);
+        generateBoard(minBoardValue, power);
+        initializeBoard();
         generatePieces();
     }
 
@@ -89,10 +92,7 @@ public class Board extends Agent {
         boardBackground = new Graphic(boardTexture);
     }
 
-    private void validateAndSetDimensions(int width, int height, String letters) {
-        if (letters.length() != width * height) {
-            throw new IllegalArgumentException("Letters: " + letters.length() + " Tiles: " + (width * height));
-        }
+    private void setDimensions(int width, int height) {
 
         this.width = Math.max(width, MIN_BOARD_SIZE);
         this.height = Math.max(height, MIN_BOARD_SIZE);
@@ -100,30 +100,50 @@ public class Board extends Agent {
         fb = new FrameBuffer(Pixmap.Format.RGBA8888, Source.getScreenWidth(), Source.getScreenHeight(), false);
     }
 
-    private void initializeBoard(String letters) {
-        for (int x = 0; x < width; x++) {
-            board.add(new ArrayList<>());
-            for (int y = 0; y < height; y++) {
-                board.get(x).add(letters.charAt(x * width + y));
-            }
-        }
+    private void initializeBoard() {
+        board = Solver.getBoard();
     }
 
-    private void findValidWords() {
-        Solver.setBoard(getBoard());
+    private void generateBoard(int minBoardValue, int power) {
+        Solver.setBoard(width, height, generateBasedOffPower(power));
         Solver.resetWords();
 
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
-                List<String> foundWords = Solver.checkWords(x, y, "", new int[width][height], new ArrayList<>());
-                wordsInBoard.addAll(foundWords);
+                Solver.checkWords(x, y, "", new int[width][height], new ArrayList<>());
             }
         }
+
+        int points = Solver.calculatePoints();
+
+        if(points < minBoardValue){
+            generateBoard(minBoardValue, power);
+            return;
+        }
+
+        boardValue = points;
+
+        wordsInBoard = Solver.getTreasureWords();
 
         sortByLengthDescThenAlphabetically(wordsInBoard);
 
         for(int i = 0; i < wordsInBoard.size(); i++){
             wordsFound.add(false);
+        }
+    }
+
+    private String generateBasedOffPower(int power){
+        switch(power){
+            case 0 : return ImprovedBoardGenerator.generateFastLevel3(width, height);
+            case 1 : return ImprovedBoardGenerator.generateFastLevel2_5(width, height);
+            case 2 : return ImprovedBoardGenerator.generateFastLevel2(width, height);
+            case 3 : return ImprovedBoardGenerator.generateFastLevel1_5(width, height);
+            case 4 : return ImprovedBoardGenerator.generateFastLevel1(width, height);
+            case 5 : return ImprovedBoardGenerator.generateOptimizedBoard(width, height);
+            case 6 : return ImprovedBoardGenerator.generateClusteredBoard(width, height);
+            case 7 : return ImprovedBoardGenerator.generateOptimalBoard(width, height);
+            case 8 : return ImprovedBoardGenerator.generateBestBoard(width, height);
+            default : return ImprovedBoardGenerator.generateHybridBoard(width, height);
         }
     }
 
@@ -160,7 +180,8 @@ public class Board extends Agent {
     // ========== Setters ==========
 
     public void setScale(float f) {
-        scale = f;
+        scale = 12f / Math.max(width, height) * f;
+        boardBackgroundScale = f;
     }
 
     public void setBoardX(float x) {
@@ -230,6 +251,10 @@ public class Board extends Agent {
 
     public List<Boolean> getWordsFound(){return wordsFound;}
 
+    public int getBoardValue(){
+        return boardValue;
+    }
+
     // ========== Animation Creation ==========
 
     private Animation createWordCheckAnimation() {
@@ -289,7 +314,7 @@ public class Board extends Agent {
         setBoardY(Source.getScreenHeight() / 2);
         float yScale = (Source.getScreenHeight() / 1750f);
         float xScale = (Source.getScreenWidth() / 1500f);
-        setScale(12f / Math.max(width, height) * (float)Math.min(xScale, yScale));
+        setScale((float)Math.min(xScale, yScale));
         setMouseVector(Source.getScreenMouseX(), Source.getScreenHeight() - Source.getScreenMouseY());
 
         drawBackground(sb);
@@ -315,7 +340,7 @@ public class Board extends Agent {
     private void drawBoardBackground(SpriteBatch sb) {
         sb.setProjectionMatrix(Source.camera.combined);
         sb.begin();
-        boardBackground.setScale(1.6f * boardBackground.getWidth() / 1720);
+        boardBackground.setScale(2.25f * boardBackground.getWidth() / 1720 * boardBackgroundScale);
         boardBackground.draw(sb);
         sb.end();
     }

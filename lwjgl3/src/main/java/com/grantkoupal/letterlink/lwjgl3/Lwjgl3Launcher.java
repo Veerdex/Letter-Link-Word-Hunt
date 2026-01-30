@@ -3,7 +3,6 @@ package com.grantkoupal.letterlink.lwjgl3;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.grantkoupal.letterlink.Source;
-import com.grantkoupal.letterlink.quantum.Manager;
 
 /** Launches the desktop (LWJGL3) application. */
 public class Lwjgl3Launcher {
@@ -13,7 +12,7 @@ public class Lwjgl3Launcher {
     }
 
     private static Lwjgl3Application createApplication() {
-        Manager.setOnDesktop(true);
+        com.grantkoupal.letterlink.quantum.Manager.setOnDesktop(true);
         return new Lwjgl3Application(new Source(new FreeTypeFontProvider()), getDefaultConfiguration());
     }
 

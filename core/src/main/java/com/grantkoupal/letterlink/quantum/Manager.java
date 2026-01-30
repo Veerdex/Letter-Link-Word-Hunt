@@ -75,7 +75,7 @@ public abstract class Manager extends ApplicationAdapter {
     // ----- Looping -----
     private static List<Animation> animationList = new ArrayList<Animation>();
     private static List<Timer> timerList = new ArrayList<Timer>();
-    private static List<Process> resizeList = new ArrayList<Process>();
+    private static List<com.grantkoupal.letterlink.quantum.Process> resizeList = new ArrayList<com.grantkoupal.letterlink.quantum.Process>();
 
     /**
      * Automatically runs at the beginning of every program and creates
@@ -422,7 +422,7 @@ public abstract class Manager extends ApplicationAdapter {
     public void resize(int width, int height) {
         viewport.update(width, height, true);
         if (physicsViewport != null) physicsViewport.update(width, height, true); // meters
-        List<Process> processRef = currentPage.resizes;
+        List<com.grantkoupal.letterlink.quantum.Process> processRef = currentPage.resizes;
         for(int i = 0; i < processRef.size(); i++) {
             if (!processRef.get(i).run()) {
                 processRef.remove(i);
@@ -502,7 +502,7 @@ public abstract class Manager extends ApplicationAdapter {
         animationList.remove(a);
     }
 
-    public static void addResize(Process p){
+    public static void addResize(com.grantkoupal.letterlink.quantum.Process p){
         resizeList.add(p);
     }
 
