@@ -19,7 +19,7 @@ public class ChainDisplay extends Agent {
     private float scale = 1;
 
     public ChainDisplay(Board b){
-        font = Source.generateFont("Coiny", 128);
+        font = Source.generateFont(AssetManager.fontName, 128);
         font.setColor(Color.BLACK);
 
         board = b;
@@ -39,7 +39,7 @@ public class ChainDisplay extends Agent {
         sr.setColor(Color.WHITE);
         sr.rect(displayX - 500 * scale, displayY - 150 * scale, 1000 * scale, 300 * scale);
         sr.end();
-        font.getData().setScale(Math.min(scale / (board.getStringChain().length() + 1) * 10, 1.1f));
+        font.getData().setScale(Math.min(scale / (board.getStringChain().length() + 1) * 10, 2f * scale));
         layout.setText(font, board.getStringChain().toUpperCase());
         sb.begin();
         font.draw(sb, board.getStringChain().toUpperCase(), displayX - layout.width / 2f, displayY + layout.height / 2f);

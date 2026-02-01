@@ -2,18 +2,20 @@ package com.grantkoupal.letterlink;
 
 import com.badlogic.gdx.graphics.Texture;
 
-public class TextureSet {
-    protected Texture tileTexture;
-    protected Texture boardTexture;
-    protected Texture backgroundTexture;
+public class AssetManager {
+    protected static Texture tileTexture;
+    protected static Texture boardTexture;
+    protected static Texture backgroundTexture;
+    protected static String fontName;
 
-    public TextureSet(String tileName, String boardName, String backgroundName){
+    public static void setAssets(String tileName, String boardName, String backgroundName, String fontName){
         tileTexture = new Texture("Boggle Board/Pieces/" + tileName);
         boardTexture = new Texture("Boggle Board/Boards/" + boardName);
         backgroundTexture = new Texture("Backgrounds/" + backgroundName);
+        AssetManager.fontName = fontName;
     }
 
-    public void dispose(){
+    public static void dispose(){
         tileTexture.dispose();
         boardTexture.dispose();
         backgroundTexture.dispose();

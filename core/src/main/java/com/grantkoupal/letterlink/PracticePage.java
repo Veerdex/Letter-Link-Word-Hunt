@@ -1,6 +1,7 @@
 package com.grantkoupal.letterlink;
 
 import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.grantkoupal.letterlink.quantum.Page;
 import com.grantkoupal.letterlink.quantum.Process;
@@ -11,14 +12,15 @@ public class PracticePage extends Page {
     private HintTable hintTable;
     private GuessTable guessTable;
     private ChainDisplay chainDisplay;
+    private PointsDisplay pointsDisplay;
     private final int boardWidth = 4;
     private final int boardHeight = 4;
-    private TextureSet bts;
+    private BitmapFont font;
 
     @Override
     public void initialize() {
 
-        bts = new TextureSet("Wood Piece.png", "Boise.png", "Waves.png");
+        AssetManager.setAssets("Wood Piece.png", "Boise.png", "Waves.png", "SuperSense");
 
         long startTime = System.nanoTime();
 
@@ -35,7 +37,7 @@ public class PracticePage extends Page {
         Power 8 -> Seconds: 32.16   Points: 882,833     Rating: 27,451
         Power 9 -> Seconds: 25.84   Points: 977,557     Rating: 37,828
          */
-        board = new Board(boardWidth, boardHeight, bts, 0);
+        board = new Board(boardWidth, boardHeight, 0);
         board.addAnimations(this);
         System.out.println((System.nanoTime() - startTime) / 1000000000f);
 
@@ -57,6 +59,10 @@ public class PracticePage extends Page {
 
         add(chainDisplay);
 
+        pointsDisplay = new PointsDisplay(board, this);
+
+        add(pointsDisplay);
+
         Source.addRenderer(renderer);
 
         run();
@@ -73,14 +79,12 @@ public class PracticePage extends Page {
     }
 
     @Override
-    public void restart() {
-
-    }
+    public void restart() {}
 
     @Override
     public void dispose() {
         board.dispose();
-        bts.dispose();
+        AssetManager.dispose();
         guessTable.dispose();
         hintTable.dispose();
     }

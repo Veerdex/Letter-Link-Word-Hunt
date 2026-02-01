@@ -51,7 +51,7 @@ public class GuessTable extends Agent {
     }
 
     private void initializeFont() {
-        font = Source.generateFont("SuperSense", 256);
+        font = Source.generateFont(AssetManager.fontName, 256);
     }
 
     public void setScroll(float f){

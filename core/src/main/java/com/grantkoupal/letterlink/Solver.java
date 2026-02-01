@@ -184,6 +184,35 @@ public class Solver {
         }
     }
 
+    public static int getWordValue(String word){
+        switch(word.length()){
+            case 3 : return 100;
+            case 4 : return 400;
+            case 5 : return 800;
+            case 6 : return 1400;
+            case 7 : return 1800;
+            case 8 : return 2200;
+            case 9 : return 2600;
+            case 10 : return 3000;
+            case 11 : return 3600;
+            case 12 : return 4000;
+            case 13 : return 4600;
+            case 14 : return 5000;
+            case 15 : return 5600;
+            case 16 : return 6000;
+            case 17 : return 6600;
+            case 18 : return 7000;
+            case 19 : return 7600;
+            case 20 : return 8000;
+            case 21 : return 8600;
+            case 22 : return 9000;
+            case 23 : return 9600;
+            case 24 : return 10000;
+            case 25 : return 10600;
+        }
+        return 0;
+    }
+
     /**
      * Calculates total score based on word lengths.
      **/

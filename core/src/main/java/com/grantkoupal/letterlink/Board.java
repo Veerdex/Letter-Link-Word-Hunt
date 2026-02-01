@@ -44,6 +44,7 @@ public class Board extends Agent {
     private int height;
     private float boardBackgroundScale = 1;
     private int boardValue = 0;
+    private int totalPoints = 0;
     private List<List<Character>> board = new ArrayList<>();
     private List<Tile> tiles = new ArrayList<>();
     private List<String> wordsInBoard = new ArrayList<>();
@@ -70,9 +71,9 @@ public class Board extends Agent {
 
     // ========== Constructor ==========
 
-    public Board(int width, int height, TextureSet textureSet, int power) {
+    public Board(int width, int height, int power) {
         initializeFont();
-        loadTextures(textureSet);
+        loadTextures();
         setDimensions(width, height);
         generateBoard(power);
         initializeBoard();
@@ -82,13 +83,13 @@ public class Board extends Agent {
     // ========== Initialization Methods ==========
 
     private void initializeFont() {
-        font = Source.generateFont("SuperSense", 256);
+        font = Source.generateFont(AssetManager.fontName, 256);
     }
 
-    private void loadTextures(TextureSet textureSet) {
-        tileTexture = textureSet.tileTexture;
-        boardTexture = textureSet.boardTexture;
-        backgroundTexture = textureSet.backgroundTexture;
+    private void loadTextures() {
+        tileTexture = AssetManager.tileTexture;
+        boardTexture = AssetManager.boardTexture;
+        backgroundTexture = AssetManager.backgroundTexture;
         backgroundTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
         boardBackground = new Graphic(boardTexture);
     }
@@ -165,6 +166,7 @@ public class Board extends Agent {
         if (index != -1 && !wordsFound.get(index)) {
             wordsFound.set(index, true);
             listOfWordsFound.add(word);
+            totalPoints += Solver.getWordValue(word);
             return true;
         }
         return false;
@@ -264,6 +266,8 @@ public class Board extends Agent {
     public String getStringChain(){
         return stringChain;
     }
+
+    public int getTotalPoints(){return totalPoints;}
 
     // ========== Animation Creation ==========
 
@@ -477,8 +481,6 @@ public class Board extends Agent {
 
     @Override
     public void dispose() {
-        font.dispose();
-
         if (fb != null) {
             fb.dispose();
         }

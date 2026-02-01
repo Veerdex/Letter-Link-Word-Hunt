@@ -504,7 +504,7 @@ public abstract class Manager extends ApplicationAdapter {
         resizeList.add(p);
     }
 
-    public static void removeResize(Process p){
+    public static void removeResize(java.lang.Process p){
         resizeList.remove(p);
     }
 
