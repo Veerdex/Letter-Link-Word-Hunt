@@ -9,14 +9,16 @@ public class PracticePage extends Page {
 
     private Board board;
     private HintTable hintTable;
-    private final int boardWidth = 5;
-    private final int boardHeight = 5;
+    private GuessTable guessTable;
+    private ChainDisplay chainDisplay;
+    private final int boardWidth = 4;
+    private final int boardHeight = 4;
     private TextureSet bts;
 
     @Override
     public void initialize() {
 
-        bts = new TextureSet("Wood Piece.png", "Boise.png", "Blob.jpg");
+        bts = new TextureSet("Wood Piece.png", "Boise.png", "Waves.png");
 
         long startTime = System.nanoTime();
 
@@ -33,7 +35,8 @@ public class PracticePage extends Page {
         Power 8 -> Seconds: 32.16   Points: 882,833     Rating: 27,451
         Power 9 -> Seconds: 25.84   Points: 977,557     Rating: 37,828
          */
-        board = new Board(boardWidth, boardHeight, bts, 0, 4);
+        board = new Board(boardWidth, boardHeight, bts, 0);
+        board.addAnimations(this);
         System.out.println((System.nanoTime() - startTime) / 1000000000f);
 
         System.out.println(board.getBoardValue());
@@ -42,11 +45,17 @@ public class PracticePage extends Page {
 
         add(board);
 
-        hintTable = new HintTable(board.getWordsInBoard(), board.getWordsFound(), bts);
+        hintTable = new HintTable(board.getWordsInBoard(), board.getWordsFound());
 
         add(hintTable);
 
-        board.addAnimations(this);
+        guessTable = new GuessTable(board.getListOfWordsFound());
+
+        add(guessTable);
+
+        chainDisplay = new ChainDisplay(board);
+
+        add(chainDisplay);
 
         Source.addRenderer(renderer);
 
@@ -72,5 +81,7 @@ public class PracticePage extends Page {
     public void dispose() {
         board.dispose();
         bts.dispose();
+        guessTable.dispose();
+        hintTable.dispose();
     }
 }

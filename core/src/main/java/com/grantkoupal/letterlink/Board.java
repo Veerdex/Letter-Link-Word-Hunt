@@ -30,8 +30,7 @@ public class Board extends Agent {
 
     // Constants
     private static final int MIN_BOARD_SIZE = 4;
-    private static final int FONT_SIZE = 288;
-    private static final float TRACE_WIDTH = 30;
+    private static final float TRACE_WIDTH = 20;
 
     // Textures and Graphics
     private Texture tileTexture;
@@ -49,6 +48,7 @@ public class Board extends Agent {
     private List<Tile> tiles = new ArrayList<>();
     private List<String> wordsInBoard = new ArrayList<>();
     private List<Boolean> wordsFound = new ArrayList<>();
+    private List<String> listOfWordsFound = new ArrayList<>();
 
     // Board State
     private float scale = 1;
@@ -60,6 +60,7 @@ public class Board extends Agent {
     public Tile currentTile = null;
     public Tile previousTile = null;
     private List<Tile> tileChain = new ArrayList<>();
+    private String stringChain = "";
 
     // Drawing
     private Vector2 mouseVector = new Vector2();
@@ -69,11 +70,11 @@ public class Board extends Agent {
 
     // ========== Constructor ==========
 
-    public Board(int width, int height, TextureSet textureSet, int minBoardValue, int power) {
+    public Board(int width, int height, TextureSet textureSet, int power) {
         initializeFont();
         loadTextures(textureSet);
         setDimensions(width, height);
-        generateBoard(minBoardValue, power);
+        generateBoard(power);
         initializeBoard();
         generatePieces();
     }
@@ -104,9 +105,11 @@ public class Board extends Agent {
         board = Solver.getBoard();
     }
 
-    private void generateBoard(int minBoardValue, int power) {
+    private void generateBoard(int power) {
         Solver.setBoard(width, height, generateBasedOffPower(power));
         Solver.resetWords();
+        listOfWordsFound.clear();
+        wordsFound.clear();
 
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
@@ -116,12 +119,12 @@ public class Board extends Agent {
 
         int points = Solver.calculatePoints();
 
-        if(points < minBoardValue){
-            generateBoard(minBoardValue, power);
+        if(points < 100000){
+            generateBoard(power);
             return;
         }
 
-        boardValue = points;
+        boardValue = Solver.calculatePoints();
 
         wordsInBoard = Solver.getTreasureWords();
 
@@ -161,6 +164,7 @@ public class Board extends Agent {
         int index = wordsInBoard.indexOf(word);
         if (index != -1 && !wordsFound.get(index)) {
             wordsFound.set(index, true);
+            listOfWordsFound.add(word);
             return true;
         }
         return false;
@@ -255,6 +259,12 @@ public class Board extends Agent {
         return boardValue;
     }
 
+    public List<String> getListOfWordsFound(){return listOfWordsFound;}
+
+    public String getStringChain(){
+        return stringChain;
+    }
+
     // ========== Animation Creation ==========
 
     private Animation createWordCheckAnimation() {
@@ -299,6 +309,7 @@ public class Board extends Agent {
             t.added = false;
             t.state = LetterState.UNSELECTED;
         }
+        stringChain = "";
         previousTile = null;
     }
 
@@ -467,6 +478,7 @@ public class Board extends Agent {
     @Override
     public void dispose() {
         font.dispose();
+
         if (fb != null) {
             fb.dispose();
         }
@@ -580,6 +592,7 @@ public class Board extends Agent {
             if (hover && !added && isSelected(45)) {
                 added = true;
                 tileChain.add(0, me());
+                stringChain = stringChain.concat(letter);
                 previousTile = me();
                 updateChainState();
             }
@@ -590,6 +603,7 @@ public class Board extends Agent {
                 tileChain.get(0).added = false;
                 previousTile = me();
                 tileChain.get(0).state = LetterState.UNSELECTED;
+                stringChain = stringChain.substring(0, stringChain.length() - 1);
                 tileChain.remove(0);
                 updateChainState();
             }

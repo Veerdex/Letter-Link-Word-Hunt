@@ -11,43 +11,33 @@ import com.grantkoupal.letterlink.quantum.Action;
 import com.grantkoupal.letterlink.quantum.Agent;
 import com.grantkoupal.letterlink.quantum.Animation;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
-public class HintTable extends Agent {
+public class GuessTable extends Agent {
 
     private final float fontScale = .5f;
 
     private BitmapFont font;
     private GlyphLayout fontLayout;
-    private String hiddenWord = "??????????????????????????????";
+    private List<String> listOfWordsFound;
 
-    private List<String> validWords;
-    private List<Boolean> wordsFound = new ArrayList<Boolean>();
     private float scroll = 0;
     private float scrollMotion = 0;
     private float scale = 1;
     private float hintX = 0;
     private float hintY = 0;
+    private int listSize;
 
-    public HintTable(List<String> validWords, List<Boolean> wordsFound){
-        this.validWords = copyOf(validWords);
-        sortByLengthDescThenAlphabetically(this.validWords);
-
-        for(int i = 0; i < validWords.size(); i++){
-            wordsFound.add(false);
-        }
-
-        this.wordsFound = wordsFound;
+    public GuessTable(List<String> listOfWordsFound){
+        this.listOfWordsFound = listOfWordsFound;
+        listSize = listOfWordsFound.size();
 
         fontLayout = new GlyphLayout();
 
         Source.addAnimation(new Animation(System.nanoTime(), Animation.INDEFINITE, new Action(){
             @Override
             public void run(float delta) {
-                if(Source.getScreenMouseX() > hintX && Source.getScreenMouseX() < Source.getScreenWidth() / 2f &&
+                if(Source.getScreenMouseX() > hintX && Source.getScreenMouseX() > Source.getScreenWidth() / 2f &&
                     Source.getScreenMouseY() < Source.getScreenHeight() / 2f - scale * 700 &&
                     Gdx.input.isButtonPressed(Input.Buttons.LEFT)){
                     scrollMotion = Gdx.input.getDeltaY();
@@ -60,31 +50,6 @@ public class HintTable extends Agent {
         initializeFont();
     }
 
-    private List<String> copyOf(List<String> list){
-        List<String> copy = new ArrayList<String>();
-        for(int i = 0; i < list.size(); i++){
-            copy.add(list.get(i));
-        }
-        return copy;
-    }
-
-    public static void sortByLengthDescThenAlphabetically(List<String> list) {
-        Collections.sort(list, new Comparator<String>() {
-            @Override
-            public int compare(String s1, String s2) {
-                // First compare by length (longest first)
-                int lengthCompare = Integer.compare(s2.length(), s1.length());
-
-                // If lengths are equal, compare alphabetically
-                if (lengthCompare == 0) {
-                    return s1.compareToIgnoreCase(s2);
-                }
-
-                return lengthCompare;
-            }
-        });
-    }
-
     private void initializeFont() {
         font = Source.generateFont("SuperSense", 256);
     }
@@ -94,8 +59,8 @@ public class HintTable extends Agent {
             scroll = 0;
             scrollMotion = 0;
             return;
-        } else if(f > validWords.size() - 10){
-            scroll = validWords.size() - 10;
+        } else if(f > Math.max(0, listOfWordsFound.size() - 10)){
+            scroll = Math.max(0, listOfWordsFound.size() - 10);
             scrollMotion = 0;
             return;
         }
@@ -103,18 +68,20 @@ public class HintTable extends Agent {
     }
 
     @Override
-    public void dispose() {
-
-    }
+    public void dispose() {}
 
     @Override
     public void draw(ShapeRenderer sr, SpriteBatch sb) {
         float yScale = (Source.getScreenHeight() / 1750f);
         float xScale = (Source.getScreenWidth() / 1500f);
         scale = (float)Math.min(xScale, yScale);
-        hintX = Source.getScreenWidth() / 2f - scale * 650;
+        hintX = Source.getScreenWidth() / 2f;// - scale * 650;
         hintY = Source.getScreenHeight() / 2f - scale * 1400;
         font.getData().setScale(scale * fontScale * .5f);
+        if (listSize != listOfWordsFound.size()) {
+            setScroll(scroll + 1);
+            listSize = listOfWordsFound.size();
+        }
         sb.begin();
         for(int i = 0; i < 10; i++){
             print(sb, i);
@@ -123,25 +90,21 @@ public class HintTable extends Agent {
     }
 
     private void print(SpriteBatch sb, int y){
-        String word;
-        if(!wordsFound.get(y + (int)scroll)){
-            word = hiddenWord;
-            font.setColor(Color.WHITE);
-        } else {
-            font.setColor(Color.GOLD);
-            word = validWords.get(y + (int)scroll);
+
+        if(y + (int)scroll < 0 || y + (int)scroll >= listOfWordsFound.size()){
+            return;
         }
+
+        String word;
+
+        word = listOfWordsFound.get(y + (int)scroll);
+
         float yPos = (y - scroll % 1) * 150 * scale * fontScale;
 
-        if(word.charAt(0) == '?'){
-            for(int i = 0; i < validWords.get(y + (int)scroll).length(); i++){
-                drawTile(yPos, i * 125 * scale * fontScale, "" + word.charAt(i), sb);
-            }
-        } else {
-            for(int i = 0; i < word.length(); i++){
-                drawTile(yPos, i * 125 * scale * fontScale, "" + word.charAt(i), sb);
-            }
+        for(int i = 0; i < listOfWordsFound.get(y + (int)scroll).length(); i++){
+            drawTile(yPos, i * 125 * scale * fontScale, "" + word.charAt(i), sb);
         }
+
         font.setColor(Color.WHITE);
     }
 

@@ -2,10 +2,7 @@ package com.grantkoupal.letterlink.quantum;
 
 import box2dLight.PointLight;
 import box2dLight.RayHandler;
-import com.badlogic.gdx.ApplicationAdapter;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.InputMultiplexer;
-import com.badlogic.gdx.InputProcessor;
+import com.badlogic.gdx.*;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
@@ -85,6 +82,7 @@ public abstract class Manager extends ApplicationAdapter {
      */
     @Override
     public void create() {
+        Gdx.app.setLogLevel(Application.LOG_DEBUG);
         camera = new OrthographicCamera();
         viewport = new ScreenViewport(camera);
         viewport.apply();
