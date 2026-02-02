@@ -6,6 +6,8 @@ import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.grantkoupal.letterlink.quantum.Page;
 import com.grantkoupal.letterlink.quantum.Process;
 
+import java.util.List;
+
 public class PracticePage extends Page {
 
     private Board board;
@@ -20,7 +22,7 @@ public class PracticePage extends Page {
     @Override
     public void initialize() {
 
-        AssetManager.setAssets("Wood Piece.png", "Boise.png", "Waves.png", "SuperSense");
+        DataManager.setAssets("Wood Piece.png", "Boise.png", "Waves.png", "SuperSense");
 
         long startTime = System.nanoTime();
 
@@ -37,13 +39,20 @@ public class PracticePage extends Page {
         Power 8 -> Seconds: 32.16   Points: 882,833     Rating: 27,451
         Power 9 -> Seconds: 25.84   Points: 977,557     Rating: 37,828
          */
-        board = new Board(boardWidth, boardHeight, 0);
+        board = new Board(boardWidth, boardHeight, 4);
         board.addAnimations(this);
-        System.out.println((System.nanoTime() - startTime) / 1000000000f);
 
-        System.out.println(board.getBoardValue());
+        List<String> words = board.getWordsInBoard();
 
-        System.out.println(board.getWordsInBoard());
+        float predictedScore = 0;
+
+        for(int i = 0; i < words.size(); i++){
+            if(WordDifficultyRanker.wordDifficulty(words.get(i)) < 20){
+                predictedScore += Solver.getWordValue(words.get(i));
+            }
+        }
+
+        System.out.println("Predicted Score: " + predictedScore);
 
         add(board);
 
@@ -84,7 +93,7 @@ public class PracticePage extends Page {
     @Override
     public void dispose() {
         board.dispose();
-        AssetManager.dispose();
+        DataManager.dispose();
         guessTable.dispose();
         hintTable.dispose();
     }

@@ -22,7 +22,7 @@ public class PointsDisplay extends Agent {
 
     public PointsDisplay(Board board, Page p){
         this.board = board;
-        font = Source.generateFont(AssetManager.fontName, 256);
+        font = Source.generateFont(DataManager.fontName, 256);
         font.setColor(Color.BLACK);
 
         Animation a = new Animation(System.nanoTime(), Animation.INDEFINITE, new Action(){
@@ -44,7 +44,7 @@ public class PointsDisplay extends Agent {
 
     @Override
     public void draw(ShapeRenderer sr, SpriteBatch sb) {
-        float yScale = (Source.getScreenHeight() / 1750f);
+        float yScale = (Source.getScreenHeight() / 3000f);
         float xScale = (Source.getScreenWidth() / 1500f);
         scale = (float)Math.min(xScale, yScale);
         displayX = Source.getScreenWidth() / 2f;

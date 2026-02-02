@@ -2,7 +2,7 @@ package com.grantkoupal.letterlink;
 
 import com.badlogic.gdx.graphics.Texture;
 
-public class AssetManager {
+public class DataManager {
     protected static Texture tileTexture;
     protected static Texture boardTexture;
     protected static Texture backgroundTexture;
@@ -12,7 +12,7 @@ public class AssetManager {
         tileTexture = new Texture("Boggle Board/Pieces/" + tileName);
         boardTexture = new Texture("Boggle Board/Boards/" + boardName);
         backgroundTexture = new Texture("Backgrounds/" + backgroundName);
-        AssetManager.fontName = fontName;
+        DataManager.fontName = fontName;
     }
 
     public static void dispose(){

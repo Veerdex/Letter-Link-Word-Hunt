@@ -83,13 +83,13 @@ public class Board extends Agent {
     // ========== Initialization Methods ==========
 
     private void initializeFont() {
-        font = Source.generateFont(AssetManager.fontName, 256);
+        font = Source.generateFont(DataManager.fontName, 256);
     }
 
     private void loadTextures() {
-        tileTexture = AssetManager.tileTexture;
-        boardTexture = AssetManager.boardTexture;
-        backgroundTexture = AssetManager.backgroundTexture;
+        tileTexture = DataManager.tileTexture;
+        boardTexture = DataManager.boardTexture;
+        backgroundTexture = DataManager.backgroundTexture;
         backgroundTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
         boardBackground = new Graphic(boardTexture);
     }
@@ -327,7 +327,7 @@ public class Board extends Agent {
     public void draw(ShapeRenderer sr, SpriteBatch sb) {
         setBoardX(Source.getScreenWidth() / 2);
         setBoardY(Source.getScreenHeight() / 2);
-        float yScale = (Source.getScreenHeight() / 1750f);
+        float yScale = (Source.getScreenHeight() / 3000f);
         float xScale = (Source.getScreenWidth() / 1500f);
         setScale((float)Math.min(xScale, yScale));
         setMouseVector(Source.getScreenMouseX(), Source.getScreenHeight() - Source.getScreenMouseY());

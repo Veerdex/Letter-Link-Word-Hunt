@@ -109,7 +109,7 @@ public class HintTable extends Agent {
 
     @Override
     public void draw(ShapeRenderer sr, SpriteBatch sb) {
-        float yScale = (Source.getScreenHeight() / 1750f);
+        float yScale = (Source.getScreenHeight() / 3000f);
         float xScale = (Source.getScreenWidth() / 1500f);
         scale = (float)Math.min(xScale, yScale);
         hintX = Source.getScreenWidth() / 2f - scale * 650;
