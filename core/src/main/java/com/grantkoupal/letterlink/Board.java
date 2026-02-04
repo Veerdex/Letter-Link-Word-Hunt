@@ -45,6 +45,7 @@ public class Board extends Agent {
     private float boardBackgroundScale = 1;
     private int boardValue = 0;
     private int totalPoints = 0;
+    private float wordsPerSecond = 0;
     private List<List<Character>> board = new ArrayList<>();
     private List<Tile> tiles = new ArrayList<>();
     private List<String> wordsInBoard = new ArrayList<>();
@@ -56,6 +57,7 @@ public class Board extends Agent {
     private float boardX = 0;
     private float boardY = 0;
     public enum LetterState {UNSELECTED, INVALID, VALID, COPY};
+    public LetterState currentChainState = LetterState.UNSELECTED;
 
     // Tile Selection
     public Tile currentTile = null;
@@ -211,6 +213,7 @@ public class Board extends Agent {
     }
 
     public void setChainState(LetterState newState){
+        currentChainState = newState;
         for(int i = 0; i < tileChain.size(); i++){
             tileChain.get(i).state = newState;
         }
@@ -268,6 +271,8 @@ public class Board extends Agent {
     }
 
     public int getTotalPoints(){return totalPoints;}
+
+    public LetterState getCurrentState(){return currentChainState;}
 
     // ========== Animation Creation ==========
 
@@ -355,7 +360,7 @@ public class Board extends Agent {
     private void drawBoardBackground(SpriteBatch sb) {
         sb.setProjectionMatrix(Source.camera.combined);
         sb.begin();
-        boardBackground.setScale(2.25f * boardBackground.getWidth() / 1720 * boardBackgroundScale);
+        boardBackground.setScale(1400f / boardBackground.getTexture().getWidth() * boardBackgroundScale);
         boardBackground.draw(sb);
         sb.end();
     }
@@ -399,12 +404,12 @@ public class Board extends Agent {
 
     private void drawLetter(SpriteBatch sb, Tile t) {
         font.getData().setScale(t.letterScale * scale / 5f);
-        t.layout.setText(font, t.letter);
+        t.layout.setText(font, t.letter.toUpperCase());
 
         float x = t.x * (100 * scale) + boardX - width * (50 * scale) + 50 * scale - t.layout.width / 2;
         float y = t.y * (100 * scale) + boardY - height * (50 * scale) + 50 * scale + t.layout.height / 2;
 
-        font.draw(sb, t.letter, x, y);
+        font.draw(sb, t.letter.toUpperCase(), x, y);
     }
 
     private void drawTraceLines(ShapeRenderer sr, SpriteBatch sb) {
@@ -524,7 +529,7 @@ public class Board extends Agent {
         private void initializeLetter() {
             letter = "" + board.get(x).get(y);
             layout = new GlyphLayout();
-            layout.setText(font, letter);
+            layout.setText(font, letter.toUpperCase());
         }
 
         private void createAnimation() {

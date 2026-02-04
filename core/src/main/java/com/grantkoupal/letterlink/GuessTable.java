@@ -102,7 +102,7 @@ public class GuessTable extends Agent {
         float yPos = (y - scroll % 1) * 150 * scale * fontScale;
 
         for(int i = 0; i < listOfWordsFound.get(y + (int)scroll).length(); i++){
-            drawTile(yPos, i * 125 * scale * fontScale, "" + word.charAt(i), sb);
+            drawTile(yPos, i * 100 * scale * fontScale, "" + word.charAt(i), sb);
         }
 
         font.setColor(Color.WHITE);

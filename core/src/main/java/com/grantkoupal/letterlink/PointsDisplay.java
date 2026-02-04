@@ -16,27 +16,24 @@ public class PointsDisplay extends Agent {
     private float displayX = 0;
     private float displayY = 0;
     private float scale = 1;
-    private int displayPoints = 0;
-    private long lastPointIncrease = 0;
-    private long difference = 0;
+    private float displayPoints = 0;
 
     public PointsDisplay(Board board, Page p){
         this.board = board;
         font = Source.generateFont(DataManager.fontName, 256);
         font.setColor(Color.BLACK);
 
-        Animation a = new Animation(System.nanoTime(), Animation.INDEFINITE, new Action(){
+        Timer a = new Timer(.01f, Timer.INDEFINITE, new TimeFrame(){
             @Override
-            public void run(float delta) {
-                if(System.nanoTime() > lastPointIncrease + difference && board.getTotalPoints() > displayPoints){
-                    lastPointIncrease = System.nanoTime();
-                    difference = 1000000000L / (board.getTotalPoints() - displayPoints + 5);
-                    displayPoints += 2;
+            public void run(long iteration) {
+                if(board.getTotalPoints() > displayPoints){
+                    displayPoints += (board.getTotalPoints() - displayPoints + 5) / 100f;
+                    displayPoints = Math.min(board.getTotalPoints(), displayPoints);
                 }
             }
         });
 
-        p.addAnimation(a);
+        p.addTimer(a);
     }
 
     @Override
@@ -48,16 +45,15 @@ public class PointsDisplay extends Agent {
         float xScale = (Source.getScreenWidth() / 1500f);
         scale = (float)Math.min(xScale, yScale);
         displayX = Source.getScreenWidth() / 2f;
-        displayY = Source.getScreenHeight() / 2f + scale * 1200;
+        displayY = Source.getScreenHeight() / 2f + scale * 1050;
+        font.getData().setScale(Math.min(scale / (("" + (int)displayPoints).length() + 1) * 10, 1.1f * scale));
+        layout.setText(font, ("" + (int)displayPoints));
         sr.begin(ShapeRenderer.ShapeType.Filled);
-        sr.setColor(Color.WHITE);
-        sr.rect(displayX - 500 * scale, displayY - 150 * scale, 1000 * scale, 300 * scale);
+        Squircle.drawSquircleWithOutline(sr, Color.WHITE, Color.BLACK, 20 * scale, displayX, displayY, layout.width + 100 * scale, 300 * scale, 75 * scale);
         sr.end();
-        font.getData().setScale(Math.min(scale / (("" + displayPoints).length() + 1) * 10, 1.1f * scale));
-        layout.setText(font, ("" + displayPoints));
         sb.begin();
         font.setColor(Color.BLACK);
-        font.draw(sb, ("" + displayPoints), displayX - layout.width / 2f, displayY + layout.height / 2f);
+        font.draw(sb, ("" + (int)displayPoints), displayX - layout.width / 2f, displayY + layout.height / 2f);
         font.setColor(Color.WHITE);
         sb.end();
     }

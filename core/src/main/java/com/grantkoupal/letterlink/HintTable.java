@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.grantkoupal.letterlink.quantum.Action;
 import com.grantkoupal.letterlink.quantum.Agent;
@@ -31,6 +32,7 @@ public class HintTable extends Agent {
     private float scale = 1;
     private float hintX = 0;
     private float hintY = 0;
+    private FrameBuffer fb;
 
     public HintTable(List<String> validWords, List<Boolean> wordsFound){
         this.validWords = copyOf(validWords);
@@ -86,7 +88,7 @@ public class HintTable extends Agent {
     }
 
     private void initializeFont() {
-        font = Source.generateFont("SuperSense", 256);
+        font = Source.generateFont(DataManager.fontName, 256);
     }
 
     public void setScroll(float f){
@@ -135,11 +137,11 @@ public class HintTable extends Agent {
 
         if(word.charAt(0) == '?'){
             for(int i = 0; i < validWords.get(y + (int)scroll).length(); i++){
-                drawTile(yPos, i * 125 * scale * fontScale, "" + word.charAt(i), sb);
+                drawTile(yPos, i * 100 * scale * fontScale, "" + word.charAt(i), sb);
             }
         } else {
             for(int i = 0; i < word.length(); i++){
-                drawTile(yPos, i * 125 * scale * fontScale, "" + word.charAt(i), sb);
+                drawTile(yPos, i * 100 * scale * fontScale, "" + word.charAt(i), sb);
             }
         }
         font.setColor(Color.WHITE);

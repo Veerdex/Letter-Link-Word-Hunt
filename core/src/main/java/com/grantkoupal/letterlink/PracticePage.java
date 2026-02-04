@@ -22,7 +22,7 @@ public class PracticePage extends Page {
     @Override
     public void initialize() {
 
-        DataManager.setAssets("Wood Piece.png", "Boise.png", "Waves.png", "SuperSense");
+        DataManager.setAssets("Wood Piece.png", "Bronco.png", "Waves.png", "Coiny");
 
         long startTime = System.nanoTime();
 
@@ -42,14 +42,18 @@ public class PracticePage extends Page {
         board = new Board(boardWidth, boardHeight, 4);
         board.addAnimations(this);
 
+        System.out.println(board.getWordsInBoard());
+
         List<String> words = board.getWordsInBoard();
 
         float predictedScore = 0;
+        float difficulty = 0;
 
         for(int i = 0; i < words.size(); i++){
             if(WordDifficultyRanker.wordDifficulty(words.get(i)) < 20){
                 predictedScore += Solver.getWordValue(words.get(i));
             }
+            difficulty += Solver.getWordValue(words.get(i));
         }
 
         System.out.println("Predicted Score: " + predictedScore);
