@@ -42,12 +42,16 @@ public abstract class Page implements Disposable{
     public void addToStage(Agent a){
         Manager.addToStage(a);
         onStage.add(a);
+        a.parent = this;
+        a.frame();
     }
 
     public void addToStage(Agent... agents){
         for(Agent a : agents){
             Manager.addToStage(a);
             onStage.add(a);
+            a.parent = this;
+            a.frame();
         };
     }
 
@@ -69,6 +73,8 @@ public abstract class Page implements Disposable{
 
     public void add(Agent a){
         renderer.addObject(a);
+        a.parent = this;
+        a.frame();
     }
 
     public void add(Graphic s){

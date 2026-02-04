@@ -3,6 +3,8 @@ package com.grantkoupal.letterlink;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -17,59 +19,102 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+/**
+ * Displays a scrollable table of all valid words in the puzzle.
+ * Words appear as question marks until found, then show in gold.
+ * Renders on the left side of the screen with mouse scroll support.
+ */
 public class HintTable extends Agent {
 
-    private final float fontScale = .5f;
+    // ========== Constants ==========
+    private static final float FONT_SCALE = 0.5f;
+    private static final int VISIBLE_ROWS = 10;
+    private static final String HIDDEN_WORD_PLACEHOLDER = "??????????????????????????????";
 
+    // ========== Graphics ==========
     private BitmapFont font;
     private GlyphLayout fontLayout;
-    private String hiddenWord = "??????????????????????????????";
+    private FrameBuffer fb;
 
+    // ========== Data ==========
     private List<String> validWords;
-    private List<Boolean> wordsFound = new ArrayList<Boolean>();
+    private List<Boolean> wordsFound;
+
+    // ========== Scroll State ==========
     private float scroll = 0;
     private float scrollMotion = 0;
+
+    // ========== Layout ==========
     private float scale = 1;
     private float hintX = 0;
     private float hintY = 0;
-    private FrameBuffer fb;
 
-    public HintTable(List<String> validWords, List<Boolean> wordsFound){
-        this.validWords = copyOf(validWords);
-        sortByLengthDescThenAlphabetically(this.validWords);
+    // ========== Constructor ==========
 
-        for(int i = 0; i < validWords.size(); i++){
-            wordsFound.add(false);
-        }
-
+    /**
+     * Creates a new HintTable showing all valid words in the puzzle.
+     * @param validWords List of all valid words that can be found
+     * @param wordsFound List tracking which words have been discovered
+     */
+    public HintTable(List<String> validWords, List<Boolean> wordsFound) {
+        this.validWords = copyList(validWords);
         this.wordsFound = wordsFound;
 
+        sortByLengthDescThenAlphabetically(this.validWords);
+
+        fb = new FrameBuffer(Pixmap.Format.RGBA8888, Source.getScreenWidth(), Source.getScreenHeight(), false);
         fontLayout = new GlyphLayout();
 
-        Source.addAnimation(new Animation(System.nanoTime(), Animation.INDEFINITE, new Action(){
+        initializeFont();
+        setupScrollAnimation();
+    }
+
+    // ========== Initialization ==========
+
+    private void initializeFont() {
+        font = Source.generateFont(DataManager.fontName, 256);
+    }
+
+    /**
+     * Sets up the scroll animation that responds to mouse input on the left side.
+     */
+    private void setupScrollAnimation() {
+        Source.addAnimation(new Animation(System.nanoTime(), Animation.INDEFINITE, new Action() {
             @Override
             public void run(float delta) {
-                if(Source.getScreenMouseX() > hintX && Source.getScreenMouseX() < Source.getScreenWidth() / 2f &&
-                    Source.getScreenMouseY() < Source.getScreenHeight() / 2f - scale * 700 &&
-                    Gdx.input.isButtonPressed(Input.Buttons.LEFT)){
-                    scrollMotion = Gdx.input.getDeltaY();
-                }
-                setScroll(scroll + scrollMotion * delta);
-                scrollMotion *= (float)Math.pow(.1f, delta);
+                handleScrollInput(delta);
             }
         }));
-
-        initializeFont();
     }
 
-    private List<String> copyOf(List<String> list){
-        List<String> copy = new ArrayList<String>();
-        for(int i = 0; i < list.size(); i++){
-            copy.add(list.get(i));
-        }
-        return copy;
+    @Override
+    public void frame() {
+        // Setup framebuffer resize handler
+        getPage().addResize(new com.grantkoupal.letterlink.quantum.Process() {
+            @Override
+            public boolean run() {
+                if (fb != null) {
+                    fb.dispose();
+                }
+                fb = new FrameBuffer(Pixmap.Format.RGBA8888, Source.getScreenWidth(), Source.getScreenHeight(), false);
+                return true;
+            }
+        });
     }
 
+    // ========== Utility Methods ==========
+
+    /**
+     * Creates a defensive copy of a string list.
+     */
+    private List<String> copyList(List<String> list) {
+        return new ArrayList<>(list);
+    }
+
+    /**
+     * Sorts words by length (longest first), then alphabetically.
+     * @param list List to sort in-place
+     */
     public static void sortByLengthDescThenAlphabetically(List<String> list) {
         Collections.sort(list, new Comparator<String>() {
             @Override
@@ -87,72 +132,149 @@ public class HintTable extends Agent {
         });
     }
 
-    private void initializeFont() {
-        font = Source.generateFont(DataManager.fontName, 256);
+    // ========== Scroll Handling ==========
+
+    /**
+     * Handles mouse scrolling when hovering over the table area.
+     */
+    private void handleScrollInput(float delta) {
+        boolean isOverTable = Source.getScreenMouseX() > hintX &&
+            Source.getScreenMouseX() < Source.getScreenWidth() / 2f &&
+            Source.getScreenMouseY() < Source.getScreenHeight() / 2f - scale * 700;
+
+        if (isOverTable && Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
+            scrollMotion = Gdx.input.getDeltaY();
+        }
+
+        setScroll(scroll + scrollMotion * delta);
+        scrollMotion *= (float) Math.pow(0.1f, delta);
     }
 
-    public void setScroll(float f){
-        if(f < 0){
+    /**
+     * Sets the scroll position with bounds checking.
+     * @param newScroll New scroll position
+     */
+    public void setScroll(float newScroll) {
+        int maxScroll = validWords.size() - VISIBLE_ROWS;
+
+        if (newScroll < 0) {
             scroll = 0;
             scrollMotion = 0;
-            return;
-        } else if(f > validWords.size() - 10){
-            scroll = validWords.size() - 10;
+        } else if (newScroll > maxScroll) {
+            scroll = maxScroll;
             scrollMotion = 0;
-            return;
+        } else {
+            scroll = newScroll;
         }
-        scroll = f;
     }
 
-    @Override
-    public void dispose() {
-
-    }
+    // ========== Drawing ==========
 
     @Override
     public void draw(ShapeRenderer sr, SpriteBatch sb) {
-        float yScale = (Source.getScreenHeight() / 3000f);
-        float xScale = (Source.getScreenWidth() / 1500f);
-        scale = (float)Math.min(xScale, yScale);
+        calculateLayout();
+        renderToFrameBuffer(sb);
+        renderFrameBufferToScreen(sb);
+    }
+
+    /**
+     * Calculates screen-relative layout positions and scales.
+     */
+    private void calculateLayout() {
+        float yScale = Source.getScreenHeight() / 3000f;
+        float xScale = Source.getScreenWidth() / 1500f;
+        scale = (float) Math.min(xScale, yScale);
         hintX = Source.getScreenWidth() / 2f - scale * 650;
         hintY = Source.getScreenHeight() / 2f - scale * 1400;
-        font.getData().setScale(scale * fontScale * .5f);
+        font.getData().setScale(scale * FONT_SCALE * 0.5f);
+    }
+
+    /**
+     * Renders the word list to the framebuffer.
+     */
+    private void renderToFrameBuffer(SpriteBatch sb) {
+        fb.begin();
+        Gdx.gl.glClearColor(0, 0, 0, 0);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
         sb.begin();
-        for(int i = 0; i < 10; i++){
-            print(sb, i);
+        for (int i = 0; i < VISIBLE_ROWS; i++) {
+            printWord(sb, i);
         }
+        sb.end();
+
+        fb.end();
+    }
+
+    /**
+     * Draws the framebuffer content to the screen at the table position.
+     */
+    private void renderFrameBufferToScreen(SpriteBatch sb) {
+        int tableWidth = (int) (640 * scale);
+        int tableHeight = (int) (600 * scale);
+
+        sb.begin();
+        sb.draw(fb.getColorBufferTexture(),
+            hintX, hintY,           // Screen position (left side)
+            tableWidth, tableHeight, // Screen size
+            0, 0,                   // Framebuffer source position
+            tableWidth, tableHeight, // Framebuffer source size
+            false, true);           // Flip vertically
         sb.end();
     }
 
-    private void print(SpriteBatch sb, int y){
+    /**
+     * Renders a single word at the given row index.
+     * Shows as question marks if not found, gold text if found.
+     * @param sb SpriteBatch to draw with
+     * @param rowIndex Row index (0-9)
+     */
+    private void printWord(SpriteBatch sb, int rowIndex) {
+        int wordIndex = rowIndex + (int) scroll;
         String word;
-        if(!wordsFound.get(y + (int)scroll)){
-            word = hiddenWord;
+
+        // Determine display word and color
+        if (!wordsFound.get(wordIndex)) {
+            word = HIDDEN_WORD_PLACEHOLDER;
             font.setColor(Color.WHITE);
         } else {
+            word = validWords.get(wordIndex);
             font.setColor(Color.GOLD);
-            word = validWords.get(y + (int)scroll);
         }
-        float yPos = (y - scroll % 1) * 150 * scale * fontScale;
 
-        if(word.charAt(0) == '?'){
-            for(int i = 0; i < validWords.get(y + (int)scroll).length(); i++){
-                drawTile(yPos, i * 100 * scale * fontScale, "" + word.charAt(i), sb);
-            }
-        } else {
-            for(int i = 0; i < word.length(); i++){
-                drawTile(yPos, i * 100 * scale * fontScale, "" + word.charAt(i), sb);
-            }
+        float yPos = (rowIndex - scroll % 1) * 150 * FONT_SCALE * scale;
+
+        // Draw each letter
+        int actualWordLength = validWords.get(wordIndex).length();
+        for (int i = 0; i < actualWordLength; i++) {
+            drawLetter(yPos, i * 100 * scale * FONT_SCALE, "" + word.charAt(i), sb);
         }
+
         font.setColor(Color.WHITE);
     }
 
-    private void drawTile(float y, float x, String letter, SpriteBatch sb){
-        fontLayout.setText(font, letter);
+    /**
+     * Draws a single letter at the specified position.
+     * @param y Vertical position
+     * @param x Horizontal position
+     * @param letter Letter to draw
+     * @param sb SpriteBatch to draw with
+     */
+    private void drawLetter(float y, float x, String letter, SpriteBatch sb) {
+        fontLayout.setText(font, letter.toUpperCase());
 
-        x -= fontLayout.width / 2 - hintX;
-        y += fontLayout.height / 2 + hintY;
+        x -= fontLayout.width / 2 - 25 * scale;
+        y += fontLayout.height + 15 * scale;
 
-        font.draw(sb, letter, x, y);
+        font.draw(sb, letter.toUpperCase(), x, y);
+    }
+
+    // ========== Cleanup ==========
+
+    @Override
+    public void dispose() {
+        if (fb != null) {
+            fb.dispose();
+        }
     }
 }

@@ -12,77 +12,111 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.Vector2;
 import com.grantkoupal.letterlink.quantum.*;
-import com.grantkoupal.letterlink.quantum.Manager;
-import com.grantkoupal.letterlink.quantum.Page;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.grantkoupal.letterlink.HintTable.sortByLengthDescThenAlphabetically;
 
+/**
+ * The main game board where players trace letters to form words.
+ * Manages the letter grid, tile interactions, word validation, and visual feedback.
+ * Supports mouse/touch input for selecting letter chains with real-time color-coded validation.
+ */
 public class Board extends Agent {
 
-    private static final Color RED_TINT = new Color(1, .8f, .8f, 1f);
-    private static final Color YELLOW_TINT = new Color(1, 1, .7f, 1f);
-    private static final Color GREEN_TINT = new Color(.7f, 1, .7f, 1f);
+    // ========== Constants ==========
 
-    // Constants
+    // Tile color tints based on state
+    private static final Color RED_TINT = new Color(1, 0.8f, 0.8f, 1f);
+    private static final Color YELLOW_TINT = new Color(1, 1, 0.7f, 1f);
+    private static final Color GREEN_TINT = new Color(0.7f, 1, 0.7f, 1f);
+
+    // Board constraints
     private static final int MIN_BOARD_SIZE = 4;
-    private static final float TRACE_WIDTH = 20;
+    private static final int MIN_POINTS_THRESHOLD = 100000;
 
-    // Textures and Graphics
+    // Visual constants
+    private static final float TRACE_WIDTH = 20f;
+    private static final float TRACE_ALPHA = 0.5f;
+
+    // ========== Letter State Enum ==========
+
+    /**
+     * Represents the validation state of a letter chain.
+     */
+    public enum LetterState {
+        UNSELECTED,  // Not part of current chain
+        INVALID,     // Invalid word
+        VALID,       // Valid new word
+        COPY         // Word already found
+    }
+
+    // ========== Textures and Graphics ==========
+
     private Texture tileTexture;
     private Texture boardTexture;
     private Texture backgroundTexture;
+    private Texture bottomTextTexture;
     private Graphic boardBackground;
+    private Graphic textBackground;
     private BitmapFont font;
+    private FrameBuffer fb;
 
-    // Board Structure
+    // ========== Board Structure ==========
+
     private int width;
     private int height;
-    private float boardBackgroundScale = 1;
-    private int boardValue = 0;
-    private int totalPoints = 0;
-    private float wordsPerSecond = 0;
     private List<List<Character>> board = new ArrayList<>();
     private List<Tile> tiles = new ArrayList<>();
+
+    // ========== Word Data ==========
+
     private List<String> wordsInBoard = new ArrayList<>();
     private List<Boolean> wordsFound = new ArrayList<>();
     private List<String> listOfWordsFound = new ArrayList<>();
+    private int boardValue = 0;
+    private int totalPoints = 0;
 
-    // Board State
+    // ========== Layout and Scaling ==========
+
     private float scale = 1;
+    private float boardBackgroundScale = 1;
     private float boardX = 0;
     private float boardY = 0;
-    public enum LetterState {UNSELECTED, INVALID, VALID, COPY};
-    public LetterState currentChainState = LetterState.UNSELECTED;
 
-    // Tile Selection
+    // ========== Tile Selection State ==========
+
     public Tile currentTile = null;
     public Tile previousTile = null;
     private List<Tile> tileChain = new ArrayList<>();
     private String stringChain = "";
+    public LetterState currentChainState = LetterState.UNSELECTED;
 
-    // Drawing
-    private Vector2 mouseVector = new Vector2();
-    private Color traceColor = new Color(1, 0, 0, .5f);
-    private FrameBuffer fb;
+    // ========== Animation ==========
+
     private List<Animation> tileAnimations = new ArrayList<>();
+    private Color traceColor = new Color(1, 0, 0, TRACE_ALPHA);
 
     // ========== Constructor ==========
 
+    /**
+     * Creates a new game board with the specified dimensions and difficulty.
+     * @param width Number of columns (minimum 4)
+     * @param height Number of rows (minimum 4)
+     * @param power Difficulty level (0-9, higher = more complex generation)
+     */
     public Board(int width, int height, int power) {
         initializeFont();
         loadTextures();
         setDimensions(width, height);
         generateBoard(power);
         initializeBoard();
-        generatePieces();
+        generateTiles();
     }
 
-    // ========== Initialization Methods ==========
+    // ========== Initialization ==========
 
     private void initializeFont() {
         font = Source.generateFont(DataManager.fontName, 256);
@@ -92,12 +126,15 @@ public class Board extends Agent {
         tileTexture = DataManager.tileTexture;
         boardTexture = DataManager.boardTexture;
         backgroundTexture = DataManager.backgroundTexture;
+        bottomTextTexture = DataManager.bottomTextTexture;
+
         backgroundTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
+
         boardBackground = new Graphic(boardTexture);
+        textBackground = new Graphic(bottomTextTexture);
     }
 
     private void setDimensions(int width, int height) {
-
         this.width = Math.max(width, MIN_BOARD_SIZE);
         this.height = Math.max(height, MIN_BOARD_SIZE);
 
@@ -108,52 +145,65 @@ public class Board extends Agent {
         board = Solver.getBoard();
     }
 
+    /**
+     * Generates a board layout using the Solver with the specified difficulty.
+     * Recursively regenerates until minimum point threshold is met.
+     * @param power Difficulty level determining generation algorithm
+     */
     private void generateBoard(int power) {
-        Solver.setBoard(width, height, generateBasedOffPower(power));
+        Solver.setBoard(width, height, generateBoardString(power));
         Solver.resetWords();
         listOfWordsFound.clear();
         wordsFound.clear();
 
+        // Find all valid words in the board
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 Solver.checkWords(x, y, "", new int[width][height], new ArrayList<>());
             }
         }
 
+        // Regenerate if board doesn't meet minimum points threshold
         int points = Solver.calculatePoints();
-
-        if(points < 100000){
+        if (points < MIN_POINTS_THRESHOLD) {
             generateBoard(power);
             return;
         }
 
-        boardValue = Solver.calculatePoints();
-
+        boardValue = points;
         wordsInBoard = Solver.getTreasureWords();
-
         sortByLengthDescThenAlphabetically(wordsInBoard);
 
-        for(int i = 0; i < wordsInBoard.size(); i++){
+        // Initialize word found tracking
+        for (int i = 0; i < wordsInBoard.size(); i++) {
             wordsFound.add(false);
         }
     }
 
-    private String generateBasedOffPower(int power){
-        switch(power){
-            case 0 : return ImprovedBoardGenerator.generateFastLevel3(width, height);
-            case 1 : return ImprovedBoardGenerator.generateFastLevel2_5(width, height);
-            case 2 : return ImprovedBoardGenerator.generateFastLevel2(width, height);
-            case 3 : return ImprovedBoardGenerator.generateFastLevel1_5(width, height);
-            case 4 : return ImprovedBoardGenerator.generateFastLevel1(width, height);
-            case 5 : return ImprovedBoardGenerator.generateOptimizedBoard(width, height);
-            case 6 : return ImprovedBoardGenerator.generateClusteredBoard(width, height);
-            case 7 : return ImprovedBoardGenerator.generateOptimalBoard(width, height);
-            case 8 : return ImprovedBoardGenerator.generateBestBoard(width, height);
-            default : return ImprovedBoardGenerator.generateHybridBoard(width, height);
+    /**
+     * Selects a board generation algorithm based on power level.
+     * @param power Difficulty level (0 = easiest/fastest, 9 = hardest/slowest)
+     * @return Generated board string
+     */
+    private String generateBoardString(int power) {
+        switch (power) {
+            case 0: return ImprovedBoardGenerator.generateFastLevel3(width, height);
+            case 1: return ImprovedBoardGenerator.generateFastLevel2_5(width, height);
+            case 2: return ImprovedBoardGenerator.generateFastLevel2(width, height);
+            case 3: return ImprovedBoardGenerator.generateFastLevel1_5(width, height);
+            case 4: return ImprovedBoardGenerator.generateFastLevel1(width, height);
+            case 5: return ImprovedBoardGenerator.generateOptimizedBoard(width, height);
+            case 6: return ImprovedBoardGenerator.generateClusteredBoard(width, height);
+            case 7: return ImprovedBoardGenerator.generateOptimalBoard(width, height);
+            case 8: return ImprovedBoardGenerator.generateBestBoard(width, height);
+            default: return ImprovedBoardGenerator.generateHybridBoard(width, height);
         }
     }
 
-    private void generatePieces() {
+    /**
+     * Creates Tile objects for each position on the board.
+     */
+    private void generateTiles() {
         for (int x = 0; x < width; x++) {
             for (int y = height - 1; y >= 0; y--) {
                 tiles.add(new Tile(x, y));
@@ -161,8 +211,39 @@ public class Board extends Agent {
         }
     }
 
-    // ========== Public Methods ==========
+    // ========== Animation Management ==========
 
+    /**
+     * Registers all tile animations and word checking logic with the page.
+     * @param page Parent page to add animations to
+     */
+    public void addAnimations(Page page) {
+        for (Animation animation : tileAnimations) {
+            page.addAnimation(animation);
+        }
+        page.addAnimation(createWordCheckAnimation());
+    }
+
+    /**
+     * Creates an animation that handles word submission and background updates.
+     */
+    private Animation createWordCheckAnimation() {
+        return new Animation(System.nanoTime(), Animation.INDEFINITE, new Action() {
+            @Override
+            public void run(float delta) {
+                handleWordSubmission();
+                updateBackgroundPositions();
+            }
+        });
+    }
+
+    // ========== Word Validation ==========
+
+    /**
+     * Checks if a word is valid and not already found, then records it.
+     * @param word Word to validate
+     * @return true if word was valid and newly found
+     */
     public boolean check(String word) {
         int index = wordsInBoard.indexOf(word);
         if (index != -1 && !wordsFound.get(index)) {
@@ -174,68 +255,114 @@ public class Board extends Agent {
         return false;
     }
 
-    public void addAnimations(Page p) {
-        for (Animation a : tileAnimations) {
-            p.addAnimation(a);
+    /**
+     * Handles word submission when the player releases the mouse.
+     */
+    private void handleWordSubmission() {
+        if (tileChain.size() > 0 && !Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
+            check(buildWordFromChain());
+
+            // Reset all tiles in the chain
+            for (Tile tile : tileChain) {
+                tile.tile.setColor(Color.WHITE);
+                tile.state = LetterState.UNSELECTED;
+            }
+
+            // Reset hover state on mobile
+            if (!Manager.isOnDesktop() && currentTile != null) {
+                currentTile.hover = false;
+                currentTile = null;
+            }
+
+            resetTileChain();
         }
-        p.addAnimation(createWordCheckAnimation());
     }
 
-    public List<List<Character>> getBoard() {
-        return board;
+    /**
+     * Builds a word string from the current tile chain (reversed order).
+     * @return Word formed by the chain
+     */
+    private String buildWordFromChain() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = tileChain.size() - 1; i >= 0; i--) {
+            sb.append(tileChain.get(i).letter);
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Clears the current tile chain and resets all tile states.
+     */
+    private void resetTileChain() {
+        tileChain.clear();
+        for (Tile tile : tiles) {
+            tile.added = false;
+            tile.state = LetterState.UNSELECTED;
+        }
+        stringChain = "";
+        previousTile = null;
+    }
+
+    // ========== Chain State Management ==========
+
+    /**
+     * Updates the state of all tiles in the current chain.
+     * @param newState New state to apply
+     */
+    public void setChainState(LetterState newState) {
+        currentChainState = newState;
+        for (Tile tile : tileChain) {
+            tile.state = newState;
+        }
+    }
+
+    /**
+     * Updates the chain state based on word validation.
+     */
+    public void updateChainState() {
+        switch (getWordState()) {
+            case 0: setChainState(LetterState.COPY); break;     // Already found
+            case 1: setChainState(LetterState.VALID); break;    // Valid new word
+            case 2: setChainState(LetterState.INVALID); break;  // Invalid word
+        }
+    }
+
+    /**
+     * Determines the validation state of the current word chain.
+     * @return 0 = already found, 1 = valid new word, 2 = invalid
+     */
+    private int getWordState() {
+        int index = wordsInBoard.indexOf(buildWordFromChain());
+        if (index != -1) {
+            return wordsFound.get(index) ? 0 : 1;
+        }
+        return 2;
     }
 
     // ========== Setters ==========
 
-    public void setScale(float f) {
-        scale = 12f / Math.max(width, height) * f;
-        boardBackgroundScale = f;
+    public void setScale(float scale) {
+        this.scale = 12f / Math.max(width, height) * scale;
+        this.boardBackgroundScale = scale;
     }
 
     public void setBoardX(float x) {
-        boardX = x;
+        this.boardX = x;
     }
 
     public void setBoardY(float y) {
-        boardY = y;
+        this.boardY = y;
     }
 
-    public void setMouseVector(float x, float y) {
-        mouseVector.x = x;
-        mouseVector.y = y;
-    }
-
+    /**
+     * Updates the framebuffer, disposing the old one.
+     * @param fb New framebuffer
+     */
     public void updateFrameBuffer(FrameBuffer fb) {
         if (this.fb != null) {
             this.fb.dispose();
         }
         this.fb = fb;
-    }
-
-    public void setChainState(LetterState newState){
-        currentChainState = newState;
-        for(int i = 0; i < tileChain.size(); i++){
-            tileChain.get(i).state = newState;
-        }
-    }
-
-    public void updateChainState(){
-        switch(getState()){
-            case 0 : setChainState(LetterState.COPY); break;
-            case 1 : setChainState(LetterState.VALID); break;
-            case 2 : setChainState(LetterState.INVALID); break;
-        }
-    }
-
-    private int getState(){
-        int index = wordsInBoard.indexOf(buildWordFromChain());
-        if (index != -1) {
-            if(wordsFound.get(index)){
-                return 0; // Word already found
-            }
-            return 1; // New Word
-        }
-        return 2; // Invalid Word
     }
 
     // ========== Getters ==========
@@ -256,94 +383,66 @@ public class Board extends Agent {
         return boardY;
     }
 
-    public List<String> getWordsInBoard(){return wordsInBoard;}
+    public List<List<Character>> getBoard() {
+        return board;
+    }
 
-    public List<Boolean> getWordsFound(){return wordsFound;}
+    public List<String> getWordsInBoard() {
+        return wordsInBoard;
+    }
 
-    public int getBoardValue(){
+    public List<Boolean> getWordsFound() {
+        return wordsFound;
+    }
+
+    public int getBoardValue() {
         return boardValue;
     }
 
-    public List<String> getListOfWordsFound(){return listOfWordsFound;}
+    public List<String> getListOfWordsFound() {
+        return listOfWordsFound;
+    }
 
-    public String getStringChain(){
+    public String getStringChain() {
         return stringChain;
     }
 
-    public int getTotalPoints(){return totalPoints;}
-
-    public LetterState getCurrentState(){return currentChainState;}
-
-    // ========== Animation Creation ==========
-
-    private Animation createWordCheckAnimation() {
-        return new Animation(System.nanoTime(), Animation.INDEFINITE, new Action() {
-            @Override
-            public void run(float delta) {
-                handleWordSubmission();
-                updateBackgroundPosition();
-            }
-        });
+    public int getTotalPoints() {
+        return totalPoints;
     }
 
-    private void handleWordSubmission() {
-        if (tileChain.size() > 0 && !Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
-
-            check(buildWordFromChain());
-
-            for(Tile t : tileChain){
-                t.tile.setColor(Color.WHITE);
-                t.state = LetterState.UNSELECTED;
-            }
-            if(!Manager.isOnDesktop() && currentTile != null){
-                currentTile.hover = false;
-                currentTile = null;
-            }
-
-            resetTileChain();
-        }
+    public LetterState getCurrentState() {
+        return currentChainState;
     }
 
-    private String buildWordFromChain() {
-        StringBuilder sb = new StringBuilder();
-        for (int i = tileChain.size() - 1; i >= 0; i--) {
-            sb.append(tileChain.get(i).letter);
-        }
-        return sb.toString();
-    }
-
-    private void resetTileChain() {
-        tileChain.clear();
-        for (Tile t : tiles) {
-            t.added = false;
-            t.state = LetterState.UNSELECTED;
-        }
-        stringChain = "";
-        previousTile = null;
-    }
-
-    private void updateBackgroundPosition() {
-        boardBackground.setCenter(Source.getScreenWidth() / 2, Source.getScreenHeight() / 2);
-    }
-
-    // ========== Drawing Methods ==========
+    // ========== Drawing ==========
 
     @Override
     public void draw(ShapeRenderer sr, SpriteBatch sb) {
-        setBoardX(Source.getScreenWidth() / 2);
-        setBoardY(Source.getScreenHeight() / 2);
-        float yScale = (Source.getScreenHeight() / 3000f);
-        float xScale = (Source.getScreenWidth() / 1500f);
-        setScale((float)Math.min(xScale, yScale));
-        setMouseVector(Source.getScreenMouseX(), Source.getScreenHeight() - Source.getScreenMouseY());
-
+        calculateLayout();
         drawBackground(sb);
+        drawTextBackground(sb);
         drawBoardBackground(sb);
         drawTiles(sb);
         drawTraceLines(sr, sb);
     }
 
-    private void drawBackground(SpriteBatch sb){
+    /**
+     * Calculates layout positions and scale based on screen size.
+     */
+    private void calculateLayout() {
+        setBoardX(Source.getScreenWidth() / 2f);
+        setBoardY(Source.getScreenHeight() / 2f);
+
+        float yScale = Source.getScreenHeight() / 3000f;
+        float xScale = Source.getScreenWidth() / 1500f;
+        setScale(Math.min(xScale, yScale));
+    }
+
+    /**
+     * Draws the tiled background texture.
+     */
+    private void drawBackground(SpriteBatch sb) {
         sb.setProjectionMatrix(Source.camera.combined);
         sb.begin();
         sb.draw(backgroundTexture,
@@ -354,9 +453,22 @@ public class Board extends Agent {
             Source.getScreenWidth(), Source.getScreenHeight(),
             false, false);
         sb.end();
-
     }
 
+    /**
+     * Draws the background behind the bottom text area.
+     */
+    private void drawTextBackground(SpriteBatch sb) {
+        sb.setProjectionMatrix(Source.camera.combined);
+        sb.begin();
+        textBackground.setScale(2100f / textBackground.getTexture().getWidth() * boardBackgroundScale);
+        textBackground.draw(sb);
+        sb.end();
+    }
+
+    /**
+     * Draws the board background graphic.
+     */
     private void drawBoardBackground(SpriteBatch sb) {
         sb.setProjectionMatrix(Source.camera.combined);
         sb.begin();
@@ -365,35 +477,57 @@ public class Board extends Agent {
         sb.end();
     }
 
-    private void updateColor(Tile t){
-        switch(t.state){
-            case COPY : t.tile.setColor(YELLOW_TINT); break;
-            case INVALID : t.tile.setColor(RED_TINT); break;
-            case VALID : t.tile.setColor(GREEN_TINT); break;
-            case UNSELECTED : t.tile.setColor(Color.WHITE); break;
+    /**
+     * Updates background positions to stay centered.
+     */
+    private void updateBackgroundPositions() {
+        boardBackground.setCenter(Source.getScreenWidth() / 2f, Source.getScreenHeight() / 2f);
+        textBackground.setCenter(Source.getScreenWidth() / 2f, Source.getScreenHeight() / 2f - scale * 366);
+    }
+
+    /**
+     * Updates a tile's color based on its current state.
+     */
+    private void updateTileColor(Tile tile) {
+        switch (tile.state) {
+            case COPY:
+                tile.tile.setColor(YELLOW_TINT);
+                break;
+            case INVALID:
+                tile.tile.setColor(RED_TINT);
+                break;
+            case VALID:
+                tile.tile.setColor(GREEN_TINT);
+                break;
+            case UNSELECTED:
+                tile.tile.setColor(Color.WHITE);
+                break;
         }
     }
 
+    /**
+     * Draws all tiles and their letters, with the current tile on top.
+     */
     private void drawTiles(SpriteBatch sb) {
         sb.begin();
 
-        // Draw all tiles except current
-        for (Tile t : tiles) {
-            if (t != currentTile) {
-                if(tileChain.size() != 0){
-                    updateColor(t);
+        // Draw all tiles except the hovered one
+        for (Tile tile : tiles) {
+            if (tile != currentTile) {
+                if (tileChain.size() != 0) {
+                    updateTileColor(tile);
                 }
-                t.tile.draw(sb);
-                drawLetter(sb, t);
+                tile.tile.draw(sb);
+                drawLetter(sb, tile);
             }
         }
 
-        // Draw current tile on top
+        // Draw hovered tile on top
         if (currentTile != null) {
-            if(tileChain.size() == 0 && Manager.isOnDesktop()){
+            if (tileChain.size() == 0 && Manager.isOnDesktop()) {
                 currentTile.tile.setColor(RED_TINT);
             } else {
-                updateColor(currentTile);
+                updateTileColor(currentTile);
             }
             currentTile.tile.draw(sb);
             drawLetter(sb, currentTile);
@@ -402,16 +536,24 @@ public class Board extends Agent {
         sb.end();
     }
 
-    private void drawLetter(SpriteBatch sb, Tile t) {
-        font.getData().setScale(t.letterScale * scale / 5f);
-        t.layout.setText(font, t.letter.toUpperCase());
+    /**
+     * Draws a letter on a tile, centered.
+     * @param sb SpriteBatch to draw with
+     * @param tile Tile to draw letter for
+     */
+    private void drawLetter(SpriteBatch sb, Tile tile) {
+        font.getData().setScale(tile.letterScale * scale / 5f);
+        tile.layout.setText(font, tile.letter.toUpperCase());
 
-        float x = t.x * (100 * scale) + boardX - width * (50 * scale) + 50 * scale - t.layout.width / 2;
-        float y = t.y * (100 * scale) + boardY - height * (50 * scale) + 50 * scale + t.layout.height / 2;
+        float x = tile.x * (100 * scale) + boardX - width * (50 * scale) + 50 * scale - tile.layout.width / 2;
+        float y = tile.y * (100 * scale) + boardY - height * (50 * scale) + 50 * scale + tile.layout.height / 2;
 
-        font.draw(sb, t.letter.toUpperCase(), x, y);
+        font.draw(sb, tile.letter.toUpperCase(), x, y);
     }
 
+    /**
+     * Draws the trace lines connecting selected tiles.
+     */
     private void drawTraceLines(ShapeRenderer sr, SpriteBatch sb) {
         if (tileChain.size() < 1) {
             return;
@@ -421,6 +563,9 @@ public class Board extends Agent {
         renderFrameBufferToScreen(sb);
     }
 
+    /**
+     * Renders trace lines to the framebuffer for translucent overlay.
+     */
     private void renderTraceToFrameBuffer(ShapeRenderer sr) {
         fb.begin();
         Gdx.gl.glClearColor(0, 0, 0, 0);
@@ -437,33 +582,43 @@ public class Board extends Agent {
         fb.end();
     }
 
+    /**
+     * Draws a line from the mouse cursor to the first tile in the chain.
+     */
     private void drawTraceFromMouseToFirstTile(ShapeRenderer sr) {
         float mouseX = Source.getScreenMouseX();
         float mouseY = Source.getScreenHeight() - Source.getScreenMouseY();
-        float firstTileX = convertToX(tileChain.get(0).x);
-        float firstTileY = convertToY(tileChain.get(0).y);
+        float firstTileX = convertToScreenX(tileChain.get(0).x);
+        float firstTileY = convertToScreenY(tileChain.get(0).y);
 
         sr.rectLine(mouseX, mouseY, firstTileX, firstTileY, TRACE_WIDTH * scale);
         sr.circle(mouseX, mouseY, TRACE_WIDTH / 2 * scale);
     }
 
+    /**
+     * Draws lines between all tiles in the chain.
+     */
     private void drawTracesBetweenTiles(ShapeRenderer sr) {
         for (int i = 0; i < tileChain.size() - 1; i++) {
-            float x1 = convertToX(tileChain.get(i).x);
-            float y1 = convertToY(tileChain.get(i).y);
-            float x2 = convertToX(tileChain.get(i + 1).x);
-            float y2 = convertToY(tileChain.get(i + 1).y);
+            float x1 = convertToScreenX(tileChain.get(i).x);
+            float y1 = convertToScreenY(tileChain.get(i).y);
+            float x2 = convertToScreenX(tileChain.get(i + 1).x);
+            float y2 = convertToScreenY(tileChain.get(i + 1).y);
 
             sr.rectLine(x1, y1, x2, y2, TRACE_WIDTH * scale);
             sr.circle(x1, y1, TRACE_WIDTH / 2 * scale);
         }
 
-        // Draw circle at last tile
-        float lastX = convertToX(tileChain.get(tileChain.size() - 1).x);
-        float lastY = convertToY(tileChain.get(tileChain.size() - 1).y);
+        // Draw circle at the last tile
+        int lastIndex = tileChain.size() - 1;
+        float lastX = convertToScreenX(tileChain.get(lastIndex).x);
+        float lastY = convertToScreenY(tileChain.get(lastIndex).y);
         sr.circle(lastX, lastY, TRACE_WIDTH / 2 * scale);
     }
 
+    /**
+     * Draws the framebuffer to the screen with transparency.
+     */
     private void renderFrameBufferToScreen(SpriteBatch sb) {
         sb.begin();
         sb.setColor(1, 1, 1, 0.5f);
@@ -474,12 +629,18 @@ public class Board extends Agent {
 
     // ========== Coordinate Conversion ==========
 
-    private float convertToX(float x) {
-        return x * (100 * scale) + boardX - width * (50 * scale) + 50 * scale;
+    /**
+     * Converts grid X coordinate to screen X coordinate.
+     */
+    private float convertToScreenX(float gridX) {
+        return gridX * (100 * scale) + boardX - width * (50 * scale) + 50 * scale;
     }
 
-    private float convertToY(float y) {
-        return (height - y - 1) * (100 * scale) + boardY - height * (50 * scale) + 50 * scale;
+    /**
+     * Converts grid Y coordinate to screen Y coordinate (inverted).
+     */
+    private float convertToScreenY(float gridY) {
+        return (height - gridY - 1) * (100 * scale) + boardY - height * (50 * scale) + 50 * scale;
     }
 
     // ========== Cleanup ==========
@@ -491,27 +652,38 @@ public class Board extends Agent {
         }
     }
 
-    private Board me() {
-        return this;
-    }
-
     // ========== Inner Class: Tile ==========
 
+    /**
+     * Represents a single letter tile on the board.
+     * Handles rendering, animation, and interaction logic.
+     */
     class Tile {
-        // Tile Properties
+
+        // ========== Constants ==========
+        private static final float HOVER_SCALE_BONUS = 0.2f;
+        private static final float SCALE_SPEED = 2f;
+        private static final int HOVER_RADIUS = 45;
+        private static final int SELECTION_RADIUS = 45;
+        private static final int DESELECTION_RADIUS = 35;
+
+        // ========== Position ==========
         public final int x, y;
+
+        // ========== Visual ==========
         public Sprite tile;
         public String letter;
         public GlyphLayout layout;
         public float letterScale = 1;
         public LetterState state = LetterState.UNSELECTED;
 
-        // Animation State
-        public Animation t;
+        // ========== State ==========
+        public Animation animation;
         private boolean hover = false;
         private boolean added = false;
 
-        // Constructor
+        // ========== Constructor ==========
+
         public Tile(int x, int y) {
             this.x = x;
             this.y = y;
@@ -520,6 +692,8 @@ public class Board extends Agent {
             initializeLetter();
             createAnimation();
         }
+
+        // ========== Initialization ==========
 
         private void initializeTileSprite() {
             tile = new Sprite(tileTexture);
@@ -532,8 +706,11 @@ public class Board extends Agent {
             layout.setText(font, letter.toUpperCase());
         }
 
+        /**
+         * Creates the animation that handles hover, selection, and positioning.
+         */
         private void createAnimation() {
-            t = new Animation(System.nanoTime(), Animation.INDEFINITE, new Action() {
+            animation = new Animation(System.nanoTime(), Animation.INDEFINITE, new Action() {
                 @Override
                 public void run(float delta) {
                     updateHoverState(delta);
@@ -543,112 +720,142 @@ public class Board extends Agent {
                 }
             });
 
-            tileAnimations.add(t);
+            tileAnimations.add(animation);
         }
 
-        // Animation Update Methods
+        // ========== Hover Animation ==========
+
+        /**
+         * Updates hover state and scale animation.
+         */
         private void updateHoverState(float delta) {
-            if (isHover()) {
-                if(Manager.isOnDesktop()) {
+            if (isHovering()) {
+                if (Manager.isOnDesktop()) {
                     increaseScale(delta);
                 }
-                setHoverActive();
+                activateHover();
             } else {
-                if(Manager.isOnDesktop()) {
+                if (Manager.isOnDesktop()) {
                     decreaseScale(delta);
                 }
-                setHoverInactive();
+                deactivateHover();
             }
         }
 
         private void increaseScale(float delta) {
-            if (letterScale < .2 + 1) {
-                letterScale += delta * 2;
-            } else {
-                letterScale = .2f + 1;
+            float targetScale = 1f + HOVER_SCALE_BONUS;
+            if (letterScale < targetScale) {
+                letterScale += delta * SCALE_SPEED;
+                letterScale = Math.min(letterScale, targetScale);
             }
         }
 
         private void decreaseScale(float delta) {
-            if (letterScale > 1) {
-                letterScale -= delta * 2;
-            } else {
-                letterScale = 1;
+            if (letterScale > 1f) {
+                letterScale -= delta * SCALE_SPEED;
+                letterScale = Math.max(letterScale, 1f);
             }
         }
 
-        private void setHoverActive() {
+        private void activateHover() {
             if (!hover) {
                 hover = true;
-                currentTile = me();
+                currentTile = this;
             }
         }
 
-        private void setHoverInactive() {
+        private void deactivateHover() {
             if (hover) {
                 hover = false;
                 currentTile = null;
-                if(tileChain.size() == 0 && Manager.isOnDesktop()) {
+
+                if (tileChain.size() == 0 && Manager.isOnDesktop()) {
                     state = LetterState.UNSELECTED;
                     tile.setColor(Color.WHITE);
                 }
             }
         }
 
+        // ========== Selection Logic ==========
+
+        /**
+         * Adds this tile to the chain if hovered and clicked.
+         */
         private void handleTileSelection() {
-            if (hover && !added && isSelected(45)) {
+            if (hover && !added && isSelected(SELECTION_RADIUS)) {
                 added = true;
-                tileChain.add(0, me());
+                tileChain.add(0, this);
                 stringChain = stringChain.concat(letter);
-                previousTile = me();
+                previousTile = this;
                 updateChainState();
             }
         }
 
+        /**
+         * Removes the last tile from the chain if hovering over the second-to-last tile.
+         */
         private void handleTileDeselection() {
-            if (tileChain.size() > 1 && hover && added && isSelected(35) && tileChain.get(1) == me()) {
+            if (tileChain.size() > 1 && hover && added &&
+                isSelected(DESELECTION_RADIUS) && tileChain.get(1) == this) {
+
                 tileChain.get(0).added = false;
-                previousTile = me();
                 tileChain.get(0).state = LetterState.UNSELECTED;
+
+                previousTile = this;
                 stringChain = stringChain.substring(0, stringChain.length() - 1);
                 tileChain.remove(0);
+
                 updateChainState();
             }
         }
 
+        /**
+         * Updates the tile's sprite position and scale.
+         */
         private void updateTilePosition() {
-            float centerY = y * (100 * scale) + boardY - height * (50 * scale) + 50 * scale;
             float centerX = x * (100 * scale) + boardX - width * (50 * scale) + 50 * scale;
+            float centerY = y * (100 * scale) + boardY - height * (50 * scale) + 50 * scale;
             float tileScale = scale / (tile.getHeight() / 100);
 
-            tile.setCenterY(centerY);
             tile.setCenterX(centerX);
+            tile.setCenterY(centerY);
             tile.setScale(letterScale * tileScale);
         }
 
-        // Hit Detection Methods
-        public boolean isHover() {
-            return checkHitCircle(45);
+        // ========== Hit Detection ==========
+
+        /**
+         * Checks if the mouse is hovering over this tile.
+         */
+        public boolean isHovering() {
+            return checkHitCircle(HOVER_RADIUS);
         }
 
+        /**
+         * Checks if this tile is selected (clicked and adjacent to previous).
+         * @param radius Hit detection radius
+         */
         public boolean isSelected(int radius) {
-            return ((previousTile == null || (Math.abs(previousTile.x - x) <= 1 && Math.abs(previousTile.y - y) <= 1)) &&
+            boolean isAdjacent = previousTile == null ||
+                (Math.abs(previousTile.x - x) <= 1 && Math.abs(previousTile.y - y) <= 1);
+
+            return isAdjacent &&
                 Gdx.input.isButtonPressed(Input.Buttons.LEFT) &&
-                checkHitCircle(radius));
+                checkHitCircle(radius);
         }
 
+        /**
+         * Checks if the mouse is within a circular radius of the tile center.
+         * @param radius Radius in unscaled units
+         */
         private boolean checkHitCircle(float radius) {
             float tileX = x * (100 * scale) + boardX - Board.this.width * (50 * scale) + 50 * scale;
             float tileY = y * (100 * scale) + boardY - height * (50 * scale) + 50 * scale;
 
-            float difX = Source.getScreenMouseX() - tileX;
-            float difY = Source.getScreenMouseY() - tileY;
+            float deltaX = Source.getScreenMouseX() - tileX;
+            float deltaY = Source.getScreenMouseY() - tileY;
 
-            return Math.sqrt(Math.pow(difX, 2) + Math.pow(difY, 2)) < radius * scale;
-        }
-
-        private Tile me() {
-            return this;
+            return Math.sqrt(deltaX * deltaX + deltaY * deltaY) < radius * scale;
         }
     }
 }
