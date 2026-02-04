@@ -15,9 +15,24 @@ public class Source extends Manager {
     @Override
     public void setUp() {
 
-        PracticePage startPage = new PracticePage();
+        loadAssets();
 
-        loadNewPage(startPage);
+        LoadingBoardPage loadingPage = new LoadingBoardPage();
+
+        loadNewPage(loadingPage);
+    }
+
+    /**
+     * Loads game textures and fonts.
+     */
+    private void loadAssets() {
+        DataManager.setTileTexture("Wood Piece.png");
+        DataManager.setBoardTexture("Bronco.png");
+        DataManager.setBackgroundTexture("Waves.png");
+        DataManager.setFontName("Coiny");
+        DataManager.setBottomTextTexture("Grey.png");
+        DataManager.setIcon("Checkmarks.png");
+        DataManager.setUserName("Veerdex");
     }
 
     public static BitmapFont generateFont(String path, int size){

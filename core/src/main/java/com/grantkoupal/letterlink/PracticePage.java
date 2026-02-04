@@ -24,30 +24,15 @@ public class PracticePage extends Page {
     private GuessTable guessTable;
     private ChainDisplay chainDisplay;
     private PointsDisplay pointsDisplay;
+    private MenuDisplay menuDisplay;
 
     // ========== Initialization ==========
 
     @Override
     public void initialize() {
-        loadAssets();
         createBoard();
         createUIComponents();
         setupResizeHandler();
-
-        Source.addRenderer(renderer);
-    }
-
-    /**
-     * Loads game textures and fonts.
-     */
-    private void loadAssets() {
-        DataManager.setAssets(
-            "Wood Piece.png",  // Tile texture
-            "Bronco.png",      // Board texture
-            "Waves.png",       // Background texture
-            "Coiny",           // Font name
-            "Grey.png"         // Additional texture
-        );
     }
 
     /**
@@ -123,6 +108,10 @@ public class PracticePage extends Page {
         // Shows current score and points
         pointsDisplay = new PointsDisplay(board, this);
         add(pointsDisplay);
+
+        // Displays icon, time left, and rank
+        menuDisplay = new MenuDisplay();
+        add(menuDisplay);
     }
 
     /**

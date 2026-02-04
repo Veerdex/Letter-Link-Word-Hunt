@@ -15,7 +15,7 @@ public class PointsDisplay extends Agent {
 
     // ========== Constants ==========
     private static final float UPDATE_INTERVAL = 0.01f;
-    private static final float ANIMATION_SPEED_FACTOR = 100f;
+    private static final float ANIMATION_SPEED_FACTOR = 50f;
     private static final float ANIMATION_ACCELERATION = 5f;
     private static final float MAX_FONT_SCALE = 1.1f;
     private static final float FONT_SCALE_DIVISOR = 10f;

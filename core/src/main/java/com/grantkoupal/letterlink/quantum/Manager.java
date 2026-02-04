@@ -229,20 +229,23 @@ public abstract class Manager extends ApplicationAdapter {
         nanoTime = System.nanoTime();
 
         //May want to change this later to not copy the list
-        List<Animation> animationRef = currentPage.animations;
-        for (int i = 0; i < animationRef.size(); i++) {
-            if (!animationRef.get(i).update(nanoTime, delta)) {
-                animationRef.remove(i);
-                i--;
+        if(currentPage != null) {
+            List<Animation> animationRef = currentPage.animations;
+            for (int i = 0; i < animationRef.size(); i++) {
+                if (!animationRef.get(i).update(nanoTime, delta)) {
+                    animationRef.remove(i);
+                    i--;
+                }
+            }
+            List<Timer> timerRef = currentPage.timers;
+            for (int i = 0; i < timerRef.size(); i++) {
+                if (!timerRef.get(i).update(delta)) {
+                    timerRef.remove(i);
+                    i--;
+                }
             }
         }
-        List<Timer> timerRef = currentPage.timers;
-        for(int i = 0; i < timerRef.size(); i++) {
-            if (!timerRef.get(i).update(delta)) {
-                timerRef.remove(i);
-                i--;
-            }
-        }
+
         if(mainWorld != null){
             mainWorld.step(delta, 6, 2);  // 6 velocity iterations, 2 position iterations
         }
@@ -385,6 +388,7 @@ public abstract class Manager extends ApplicationAdapter {
         // Adds the new page to the queue, moves pages down the queue, and removes the
         // last page
         if(currentPage != null){
+            removeRenderer(currentPage.renderer);
             currentPage.removeAgentsFromStage();
         }
         if (queue[2] != null)
@@ -394,6 +398,8 @@ public abstract class Manager extends ApplicationAdapter {
         queue[0] = currentPage;
 
         currentPage = p;
+
+        addRenderer(p.renderer);
     }
 
     /**
@@ -406,9 +412,11 @@ public abstract class Manager extends ApplicationAdapter {
         if (queue[0] == null)
             throw new IllegalStateException("No previous page to return to!");
         Page current = currentPage;
+        removeRenderer(currentPage.renderer);
         currentPage = queue[0];
         queue[0] = current;
         currentPage.restart();
+        addRenderer(currentPage.renderer);
         return currentPage;
     }
 
@@ -420,6 +428,7 @@ public abstract class Manager extends ApplicationAdapter {
     public void resize(int width, int height) {
         viewport.update(width, height, true);
         if (physicsViewport != null) physicsViewport.update(width, height, true); // meters
+        if(currentPage == null) return;
         List<com.grantkoupal.letterlink.quantum.Process> processRef = currentPage.resizes;
         for(int i = 0; i < processRef.size(); i++) {
             if (!processRef.get(i).run()) {
@@ -439,7 +448,9 @@ public abstract class Manager extends ApplicationAdapter {
         }
         stage.dispose();
         Textures.dispose();
-        currentPage.delete();
+        if(currentPage != null) {
+            currentPage.delete();
+        }
         int size = queue.length;
         for (int i = 0; i < size; i++) {
             Page nextPage = queue[i];

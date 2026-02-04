@@ -13,35 +13,70 @@ public class DataManager {
     private static final String BOARD_PATH = "Boggle Board/Boards/";
     private static final String BACKGROUND_PATH = "Backgrounds/";
     private static final String BOTTOM_TEXT_PATH = "Bottom Text Backgrounds/";
+    private static final String ICON_PATH = "Icons/";
 
     // ========== Textures ==========
-    protected static Texture tileTexture;
-    protected static Texture boardTexture;
-    protected static Texture backgroundTexture;
-    protected static Texture bottomTextTexture;
+    protected static Texture tileTexture = null;
+    protected static Texture boardTexture = null;
+    protected static Texture backgroundTexture = null;
+    protected static Texture bottomTextTexture = null;
+    protected static Texture iconTexture = null;
 
     // ========== Font ==========
     protected static String fontName;
 
+    // ========== User Info ==========
+    protected static String userName = null;
+    protected static int rank = 1000;
+
     // ========== Asset Loading ==========
 
-    /**
-     * Loads and initializes all game assets from the specified file names.
-     * This should be called once at the start of each game session.
-     *
-     * @param tileName Name of the tile texture file (e.g., "Wood Piece.png")
-     * @param boardName Name of the board texture file (e.g., "Bronco.png")
-     * @param backgroundName Name of the background texture file (e.g., "Waves.png")
-     * @param fontName Name of the font to use (e.g., "Coiny")
-     * @param bottomTextBackgroundName Name of the bottom text background texture (e.g., "Grey.png")
-     */
-    public static void setAssets(String tileName, String boardName, String backgroundName,
-                                 String fontName, String bottomTextBackgroundName) {
+    public static void setTileTexture(String tileName){
+        if(tileTexture != null){
+            tileTexture.dispose();
+        }
+
         tileTexture = new Texture(TILE_PATH + tileName);
+    }
+
+    public static void setBoardTexture(String boardName){
+        if(boardTexture != null){
+            boardTexture.dispose();
+        }
+
         boardTexture = new Texture(BOARD_PATH + boardName);
+    }
+
+    public static void setBackgroundTexture(String backgroundName){
+        if(backgroundTexture != null){
+            backgroundTexture.dispose();
+        }
+
         backgroundTexture = new Texture(BACKGROUND_PATH + backgroundName);
+    }
+
+    public static void setBottomTextTexture(String bottomTextBackgroundName){
+        if(bottomTextTexture != null){
+            bottomTextTexture.dispose();
+        }
+
         bottomTextTexture = new Texture(BOTTOM_TEXT_PATH + bottomTextBackgroundName);
+    }
+
+    public static void setFontName(String fontName){
         DataManager.fontName = fontName;
+    }
+
+    public static void setIcon(String name){
+        if(iconTexture != null){
+            iconTexture.dispose();
+        }
+
+        iconTexture = new Texture(ICON_PATH + name);
+    }
+
+    public static void setUserName(String userName){
+        DataManager.userName = userName;
     }
 
     // ========== Resource Cleanup ==========
