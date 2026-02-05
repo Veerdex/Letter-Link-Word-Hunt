@@ -149,6 +149,8 @@ public class ChainDisplay extends Agent {
         float textX = displayX - layout.width / 2f;
         float textY = displayY + layout.height / 2f;
 
+        font.setColor(Color.BLACK);
+
         font.draw(sb, chainText, textX, textY);
 
         sb.end();

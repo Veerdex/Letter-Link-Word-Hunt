@@ -1,7 +1,10 @@
 package com.grantkoupal.letterlink.lwjgl3;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.PixmapPacker;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.utils.ObjectMap;
 import com.grantkoupal.letterlink.quantum.FontProvider;
@@ -32,6 +35,10 @@ public class FreeTypeFontProvider implements FontProvider {
         FreeTypeFontGenerator.FreeTypeFontParameter parameter =
             new FreeTypeFontGenerator.FreeTypeFontParameter();
         parameter.size = size;
+        parameter.packer = new PixmapPacker(4096, 4096, Pixmap.Format.RGBA8888, 2, false);
+
+        parameter.minFilter = Texture.TextureFilter.Linear;
+        parameter.magFilter = Texture.TextureFilter.Linear;
 
         BitmapFont font = generator.generateFont(parameter);
         fonts.put(key, font);

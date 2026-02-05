@@ -36,7 +36,8 @@ public class DataManager {
             tileTexture.dispose();
         }
 
-        tileTexture = new Texture(TILE_PATH + tileName);
+        tileTexture = new Texture(Source.getAsset(TILE_PATH + tileName), true);
+        tileTexture.setFilter(Texture.TextureFilter.MipMapLinearLinear, Texture.TextureFilter.MipMapLinearLinear);
     }
 
     public static void setBoardTexture(String boardName){
@@ -44,7 +45,8 @@ public class DataManager {
             boardTexture.dispose();
         }
 
-        boardTexture = new Texture(BOARD_PATH + boardName);
+        boardTexture = new Texture(Source.getAsset(BOARD_PATH + boardName));
+        boardTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
     }
 
     public static void setBackgroundTexture(String backgroundName){
@@ -61,6 +63,7 @@ public class DataManager {
         }
 
         bottomTextTexture = new Texture(BOTTOM_TEXT_PATH + bottomTextBackgroundName);
+        bottomTextTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
     }
 
     public static void setFontName(String fontName){
@@ -73,6 +76,7 @@ public class DataManager {
         }
 
         iconTexture = new Texture(ICON_PATH + name);
+        iconTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
     }
 
     public static void setUserName(String userName){

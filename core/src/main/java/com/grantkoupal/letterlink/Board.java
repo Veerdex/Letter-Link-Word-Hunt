@@ -461,7 +461,7 @@ public class Board extends Agent {
     private void drawTextBackground(SpriteBatch sb) {
         sb.setProjectionMatrix(Source.camera.combined);
         sb.begin();
-        textBackground.setScale(2100f / textBackground.getTexture().getWidth() * boardBackgroundScale);
+        textBackground.setScale(660f / textBackground.getTexture().getHeight() * boardBackgroundScale);
         textBackground.draw(sb);
         sb.end();
     }
@@ -472,16 +472,24 @@ public class Board extends Agent {
     private void drawBoardBackground(SpriteBatch sb) {
         sb.setProjectionMatrix(Source.camera.combined);
         sb.begin();
+        drawBoardShadow(sb);
+        boardBackground.setColor(1, 1, 1, 1);
         boardBackground.setScale(1400f / boardBackground.getTexture().getWidth() * boardBackgroundScale);
         boardBackground.draw(sb);
         sb.end();
+    }
+
+    private void drawBoardShadow(SpriteBatch sb){
+        boardBackground.setColor(0, 0, 0, .5f);
+        boardBackground.setCenter(Source.getScreenWidth() / 2f + boardBackgroundScale * 50, Source.getScreenHeight() / 2f - boardBackgroundScale * 50);
+        boardBackground.draw(sb);
+        boardBackground.setCenter(Source.getScreenWidth() / 2f, Source.getScreenHeight() / 2f);
     }
 
     /**
      * Updates background positions to stay centered.
      */
     private void updateBackgroundPositions() {
-        boardBackground.setCenter(Source.getScreenWidth() / 2f, Source.getScreenHeight() / 2f);
         textBackground.setCenter(Source.getScreenWidth() / 2f, Source.getScreenHeight() / 2f - boardBackgroundScale * 1100);
     }
 
@@ -510,6 +518,8 @@ public class Board extends Agent {
      */
     private void drawTiles(SpriteBatch sb) {
         sb.begin();
+
+        font.setColor(Color.WHITE);
 
         // Draw all tiles except the hovered one
         for (Tile tile : tiles) {
@@ -547,7 +557,6 @@ public class Board extends Agent {
 
         float x = tile.x * (100 * scale) + boardX - width * (50 * scale) + 50 * scale - tile.layout.width / 2;
         float y = tile.y * (100 * scale) + boardY - height * (50 * scale) + 50 * scale + tile.layout.height / 2;
-
         font.draw(sb, tile.letter.toUpperCase(), x, y);
     }
 
@@ -815,10 +824,10 @@ public class Board extends Agent {
         private void updateTilePosition() {
             float centerX = x * (100 * scale) + boardX - width * (50 * scale) + 50 * scale;
             float centerY = y * (100 * scale) + boardY - height * (50 * scale) + 50 * scale;
-            float tileScale = scale / (tile.getHeight() / 100);
+            float tileScale = scale * (95f / tile.getTexture().getHeight());
 
-            tile.setCenterX(centerX);
-            tile.setCenterY(centerY);
+            tile.setCenterX(Math.round(centerX));
+            tile.setCenterY(Math.round(centerY));
             tile.setScale(letterScale * tileScale);
         }
 

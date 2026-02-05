@@ -22,13 +22,11 @@ import java.util.List;
  */
 public class GuessTable extends Agent {
 
-    // ========== Constants ==========
-    private static final float FONT_SCALE = 0.5f;
-
     // ========== Graphics ==========
     private BitmapFont font;
     private GlyphLayout fontLayout;
     private FrameBuffer fb;
+    private final int fontSize = 32;
 
     // ========== Data ==========
     private List<String> listOfWordsFound;
@@ -63,7 +61,7 @@ public class GuessTable extends Agent {
     // ========== Initialization ==========
 
     private void initializeFont() {
-        font = Source.generateFont(DataManager.fontName, 256);
+        font = Source.generateFont(DataManager.fontName, fontSize);
     }
 
     /**
@@ -148,7 +146,7 @@ public class GuessTable extends Agent {
         scale = (float) Math.min(xScale, yScale);
         hintX = Source.getScreenWidth() / 2f;
         hintY = Source.getScreenHeight() / 2f - scale * 1400;
-        font.getData().setScale(scale * FONT_SCALE * 0.5f);
+        font.getData().setScale(scale * (64f / fontSize));
     }
 
     /**
@@ -168,6 +166,8 @@ public class GuessTable extends Agent {
         fb.begin();
         Gdx.gl.glClearColor(0, 0, 0, 0);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        font.setColor(Color.WHITE);
 
         sb.begin();
         for (int i = 0; i < 10; i++) {
@@ -209,14 +209,12 @@ public class GuessTable extends Agent {
         }
 
         String word = listOfWordsFound.get(wordIndex);
-        float yPos = (y - scroll % 1) * 150 * scale * FONT_SCALE;
+        float yPos = (y - scroll % 1) * 75 * scale;
 
         // Draw each letter of the word
         for (int i = 0; i < word.length(); i++) {
-            drawLetter(yPos, i * 100 * scale * FONT_SCALE, "" + word.charAt(i), sb);
+            drawLetter(yPos, i * 50 * scale, "" + word.charAt(i), sb);
         }
-
-        font.setColor(Color.WHITE);
     }
 
     /**
@@ -229,7 +227,7 @@ public class GuessTable extends Agent {
     private void drawLetter(float y, float x, String letter, SpriteBatch sb) {
         fontLayout.setText(font, letter.toUpperCase());
 
-        x -= fontLayout.width / 2 - 25 * scale;
+        x -= fontLayout.width / 2 - 30 * scale;
         y += fontLayout.height + 15 * scale;
 
         font.draw(sb, letter.toUpperCase(), x, y);

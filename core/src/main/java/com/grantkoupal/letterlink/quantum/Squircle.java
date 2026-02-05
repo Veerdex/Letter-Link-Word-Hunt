@@ -11,7 +11,7 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 public class Squircle extends Agent {
 
     // ========== Constants ==========
-    private static final int CORNER_SEGMENTS = 25;
+    private static final int CORNER_SEGMENTS = 50;
 
     // ========== Shape Properties ==========
     private float width = 10;

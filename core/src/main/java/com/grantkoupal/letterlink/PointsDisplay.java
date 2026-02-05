@@ -23,6 +23,7 @@ public class PointsDisplay extends Agent {
     // ========== Graphics ==========
     private BitmapFont font;
     private GlyphLayout layout;
+    private final int fontSize = 128;
 
     // ========== Data ==========
     private Board board;
@@ -54,7 +55,7 @@ public class PointsDisplay extends Agent {
      * Initializes the font with black color for score display.
      */
     private void initializeFont() {
-        font = Source.generateFont(DataManager.fontName, 256);
+        font = Source.generateFont(DataManager.fontName, fontSize);
         font.setColor(Color.BLACK);
     }
 
@@ -112,7 +113,7 @@ public class PointsDisplay extends Agent {
         // Scale font based on number of digits to keep it readable
         String pointsText = String.valueOf((int) displayPoints);
         float fontScale = scale / (pointsText.length() + 1) * FONT_SCALE_DIVISOR;
-        font.getData().setScale(Math.min(fontScale, MAX_FONT_SCALE * scale));
+        font.getData().setScale(Math.min(fontScale * (256f / fontSize), MAX_FONT_SCALE * scale * (256f / fontSize)));
 
         layout.setText(font, pointsText);
     }

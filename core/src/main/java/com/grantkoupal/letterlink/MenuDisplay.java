@@ -10,6 +10,7 @@ import com.grantkoupal.letterlink.quantum.Graphic;
 
 public class MenuDisplay extends Agent {
 
+    private final int fontSize = 64;
     private final int MENU_HEIGHT = 325;
     private float scale = 1;
     private Graphic icon;
@@ -20,7 +21,7 @@ public class MenuDisplay extends Agent {
     public MenuDisplay(){
         icon = new Graphic(DataManager.iconTexture);
 
-        font = Source.generateFont(DataManager.fontName, 128);
+        font = Source.generateFont(DataManager.fontName, fontSize);
 
         float yScale = Source.getScreenHeight() / 3000f;
         float xScale = Source.getScreenWidth() / 1500f;
@@ -48,11 +49,16 @@ public class MenuDisplay extends Agent {
 
         icon.setScale(MENU_HEIGHT * scale / icon.getTexture().getWidth() * .833f);
         icon.setCenter(MENU_HEIGHT * scale / 2, Source.getScreenHeight() - MENU_HEIGHT * scale / 2);
-        font.getData().setScale(scale);
+
+
+
+        font.getData().setScale(scale * (128f / fontSize));
         String clock = convertNumToTime(System.currentTimeMillis() - startTime);
         layout.setText(font, clock);
+
         sb.begin();
         icon.draw(sb);
+        font.setColor(Color.BLACK);
         font.draw(sb, clock, Source.getScreenWidth() / 2f - layout.width / 2f, Source.getScreenHeight() - MENU_HEIGHT * scale * .833f + layout.height - 20 * scale);
         sb.end();
     }

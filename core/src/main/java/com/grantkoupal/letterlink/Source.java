@@ -26,11 +26,11 @@ public class Source extends Manager {
      * Loads game textures and fonts.
      */
     private void loadAssets() {
-        DataManager.setTileTexture("Wood Piece.png");
-        DataManager.setBoardTexture("Bronco.png");
-        DataManager.setBackgroundTexture("Waves.png");
+        DataManager.setTileTexture("Polished Wood Tile.png");
+        DataManager.setBoardTexture("Smooth Blue.png");
+        DataManager.setBackgroundTexture("rosewood_veneer1_diff_1k.jpg");
         DataManager.setFontName("Coiny");
-        DataManager.setBottomTextTexture("Grey.png");
+        DataManager.setBottomTextTexture("Wood.png");
         DataManager.setIcon("Checkmarks.png");
         DataManager.setUserName("Veerdex");
     }
