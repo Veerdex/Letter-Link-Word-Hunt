@@ -482,7 +482,7 @@ public class Board extends Agent {
      */
     private void updateBackgroundPositions() {
         boardBackground.setCenter(Source.getScreenWidth() / 2f, Source.getScreenHeight() / 2f);
-        textBackground.setCenter(Source.getScreenWidth() / 2f, Source.getScreenHeight() / 2f - scale * 366);
+        textBackground.setCenter(Source.getScreenWidth() / 2f, Source.getScreenHeight() / 2f - boardBackgroundScale * 1100);
     }
 
     /**
