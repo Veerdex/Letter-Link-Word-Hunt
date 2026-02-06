@@ -17,8 +17,6 @@ import com.grantkoupal.letterlink.quantum.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.grantkoupal.letterlink.HintTable.sortByLengthDescThenAlphabetically;
-
 /**
  * The main game board where players trace letters to form words.
  * Manages the letter grid, tile interactions, word validation, and visual feedback.
@@ -35,7 +33,6 @@ public class Board extends Agent {
 
     // Board constraints
     private static final int MIN_BOARD_SIZE = 4;
-    private static final int MIN_POINTS_THRESHOLD = 100000;
 
     // Visual constants
     private static final float TRACE_WIDTH = 20f;
@@ -56,9 +53,7 @@ public class Board extends Agent {
     // ========== Textures and Graphics ==========
 
     private Texture tileTexture;
-    private Texture boardTexture;
     private Texture backgroundTexture;
-    private Texture bottomTextTexture;
     private Graphic boardBackground;
     private Graphic textBackground;
     private BitmapFont font;
@@ -68,15 +63,15 @@ public class Board extends Agent {
 
     private int width;
     private int height;
-    private List<List<Character>> board = new ArrayList<>();
-    private List<Tile> tiles = new ArrayList<>();
+    private List<List<Character>> board;
+    private final List<Tile> tiles = new ArrayList<>();
 
     // ========== Word Data ==========
 
-    private List<String> wordsInBoard = new ArrayList<>();
-    private List<Boolean> wordsFound = new ArrayList<>();
-    private List<String> listOfWordsFound = new ArrayList<>();
-    private int boardValue = 0;
+    private final List<String> wordsInBoard;
+    private final List<Boolean> wordsFound = new ArrayList<>();
+    private final List<String> listOfWordsFound = new ArrayList<>();
+    private final int boardValue;
     private int totalPoints = 0;
 
     // ========== Layout and Scaling ==========
@@ -88,16 +83,16 @@ public class Board extends Agent {
 
     // ========== Tile Selection State ==========
 
-    public Tile currentTile = null;
-    public Tile previousTile = null;
-    private List<Tile> tileChain = new ArrayList<>();
+    private Tile currentTile = null;
+    private Tile previousTile = null;
+    private final List<Tile> tileChain = new ArrayList<>();
     private String stringChain = "";
     public LetterState currentChainState = LetterState.UNSELECTED;
 
     // ========== Animation ==========
 
-    private List<Animation> tileAnimations = new ArrayList<>();
-    private Color traceColor = new Color(1, 0, 0, TRACE_ALPHA);
+    private final List<Animation> tileAnimations = new ArrayList<>();
+    private final Color traceColor = new Color(1, 0, 0, TRACE_ALPHA);
 
     // ========== Constructor ==========
 
@@ -105,13 +100,17 @@ public class Board extends Agent {
      * Creates a new game board with the specified dimensions and difficulty.
      * @param width Number of columns (minimum 4)
      * @param height Number of rows (minimum 4)
-     * @param power Difficulty level (0-9, higher = more complex generation)
      */
-    public Board(int width, int height, int power) {
+    public Board(int width, int height, List<List<Character>> board) {
+        this.board = board;
+        boardValue = Solver.getBoardValue();
+        wordsInBoard = Solver.getTreasureWords();
+        for(int i = 0; i < wordsInBoard.size(); i++){
+            wordsFound.add(false);
+        }
         initializeFont();
         loadTextures();
         setDimensions(width, height);
-        generateBoard(power);
         initializeBoard();
         generateTiles();
     }
@@ -124,14 +123,12 @@ public class Board extends Agent {
 
     private void loadTextures() {
         tileTexture = DataManager.tileTexture;
-        boardTexture = DataManager.boardTexture;
         backgroundTexture = DataManager.backgroundTexture;
-        bottomTextTexture = DataManager.bottomTextTexture;
 
         backgroundTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
 
-        boardBackground = new Graphic(boardTexture);
-        textBackground = new Graphic(bottomTextTexture);
+        boardBackground = new Graphic(DataManager.boardTexture);
+        textBackground = new Graphic(DataManager.bottomTextTexture);
     }
 
     private void setDimensions(int width, int height) {
@@ -143,61 +140,6 @@ public class Board extends Agent {
 
     private void initializeBoard() {
         board = Solver.getBoard();
-    }
-
-    /**
-     * Generates a board layout using the Solver with the specified difficulty.
-     * Recursively regenerates until minimum point threshold is met.
-     * @param power Difficulty level determining generation algorithm
-     */
-    private void generateBoard(int power) {
-        Solver.setBoard(width, height, generateBoardString(power));
-        Solver.resetWords();
-        listOfWordsFound.clear();
-        wordsFound.clear();
-
-        // Find all valid words in the board
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                Solver.checkWords(x, y, "", new int[width][height], new ArrayList<>());
-            }
-        }
-
-        // Regenerate if board doesn't meet minimum points threshold
-        int points = Solver.calculatePoints();
-        if (points < MIN_POINTS_THRESHOLD) {
-            generateBoard(power);
-            return;
-        }
-
-        boardValue = points;
-        wordsInBoard = Solver.getTreasureWords();
-        sortByLengthDescThenAlphabetically(wordsInBoard);
-
-        // Initialize word found tracking
-        for (int i = 0; i < wordsInBoard.size(); i++) {
-            wordsFound.add(false);
-        }
-    }
-
-    /**
-     * Selects a board generation algorithm based on power level.
-     * @param power Difficulty level (0 = easiest/fastest, 9 = hardest/slowest)
-     * @return Generated board string
-     */
-    private String generateBoardString(int power) {
-        switch (power) {
-            case 0: return ImprovedBoardGenerator.generateFastLevel3(width, height);
-            case 1: return ImprovedBoardGenerator.generateFastLevel2_5(width, height);
-            case 2: return ImprovedBoardGenerator.generateFastLevel2(width, height);
-            case 3: return ImprovedBoardGenerator.generateFastLevel1_5(width, height);
-            case 4: return ImprovedBoardGenerator.generateFastLevel1(width, height);
-            case 5: return ImprovedBoardGenerator.generateOptimizedBoard(width, height);
-            case 6: return ImprovedBoardGenerator.generateClusteredBoard(width, height);
-            case 7: return ImprovedBoardGenerator.generateOptimalBoard(width, height);
-            case 8: return ImprovedBoardGenerator.generateBestBoard(width, height);
-            default: return ImprovedBoardGenerator.generateHybridBoard(width, height);
-        }
     }
 
     /**
@@ -232,7 +174,6 @@ public class Board extends Agent {
             @Override
             public void run(float delta) {
                 handleWordSubmission();
-                updateBackgroundPositions();
             }
         });
     }
@@ -461,7 +402,12 @@ public class Board extends Agent {
     private void drawTextBackground(SpriteBatch sb) {
         sb.setProjectionMatrix(Source.camera.combined);
         sb.begin();
-        textBackground.setScale(660f / textBackground.getTexture().getHeight() * boardBackgroundScale);
+        textBackground.setColor(0, 0, 0, .5f);
+        textBackground.setCenter(Source.getScreenWidth() / 2f + boardBackgroundScale * 50, Source.getScreenHeight() / 2f - boardBackgroundScale * 1175);
+        textBackground.draw(sb);
+        textBackground.setColor(Color.WHITE);
+        textBackground.setCenter(Source.getScreenWidth() / 2f, Source.getScreenHeight() / 2f - boardBackgroundScale * 1125);
+        textBackground.setScale(725f / textBackground.getTexture().getHeight() * boardBackgroundScale);
         textBackground.draw(sb);
         sb.end();
     }
@@ -487,29 +433,21 @@ public class Board extends Agent {
     }
 
     /**
-     * Updates background positions to stay centered.
-     */
-    private void updateBackgroundPositions() {
-        textBackground.setCenter(Source.getScreenWidth() / 2f, Source.getScreenHeight() / 2f - boardBackgroundScale * 1100);
-    }
-
-    /**
      * Updates a tile's color based on its current state.
      */
     private void updateTileColor(Tile tile) {
         switch (tile.state) {
             case COPY:
                 tile.tile.setColor(YELLOW_TINT);
-                break;
+                return;
             case INVALID:
                 tile.tile.setColor(RED_TINT);
-                break;
+                return;
             case VALID:
                 tile.tile.setColor(GREEN_TINT);
-                break;
+                return;
             case UNSELECTED:
                 tile.tile.setColor(Color.WHITE);
-                break;
         }
     }
 
@@ -523,11 +461,19 @@ public class Board extends Agent {
 
         // Draw all tiles except the hovered one
         for (Tile tile : tiles) {
+            tile.drawShadow(sb);
+            drawLetter(sb, tile);
+        }
+
+        // Draw all tiles except the hovered one
+        for (Tile tile : tiles) {
             if (tile != currentTile) {
                 if (tileChain.size() != 0) {
                     updateTileColor(tile);
+                } else {
+                    tile.tile.setColor(Color.WHITE);
                 }
-                tile.tile.draw(sb);
+                tile.drawTile(sb);
                 drawLetter(sb, tile);
             }
         }
@@ -539,7 +485,7 @@ public class Board extends Agent {
             } else {
                 updateTileColor(currentTile);
             }
-            currentTile.tile.draw(sb);
+            currentTile.drawTile(sb);
             drawLetter(sb, currentTile);
         }
 
@@ -702,6 +648,21 @@ public class Board extends Agent {
             createAnimation();
         }
 
+        public void drawTile(SpriteBatch sb){
+            updateTilePosition(0, 0);
+            tile.draw(sb);
+        }
+
+        public void drawShadow(SpriteBatch sb){
+            updateTilePosition(20 + (letterScale - 1) * 75, - 20 - (letterScale - 1) * 75);
+            sb.setShader(Shader.blurShader);
+            Shader.blurShader.setUniformf("u_tint", 0f, 0f, 0f, 0.5f);
+            Shader.blurShader.setUniformf("blurSize", .01f);
+            tile.setScale(scale * .3f);
+            tile.draw(sb);
+            sb.setShader(null);
+        }
+
         // ========== Initialization ==========
 
         private void initializeTileSprite() {
@@ -725,7 +686,6 @@ public class Board extends Agent {
                     updateHoverState(delta);
                     handleTileSelection();
                     handleTileDeselection();
-                    updateTilePosition();
                 }
             });
 
@@ -821,14 +781,14 @@ public class Board extends Agent {
         /**
          * Updates the tile's sprite position and scale.
          */
-        private void updateTilePosition() {
-            float centerX = x * (100 * scale) + boardX - width * (50 * scale) + 50 * scale;
-            float centerY = y * (100 * scale) + boardY - height * (50 * scale) + 50 * scale;
+        private void updateTilePosition(float offsetX, float offsetY) {
+            float centerX = x * (100 * scale) + boardX - width * (50 * scale) + 50 * scale + offsetX * scale;
+            float centerY = y * (100 * scale) + boardY - height * (50 * scale) + 50 * scale + offsetY * scale;
             float tileScale = scale * (95f / tile.getTexture().getHeight());
 
             tile.setCenterX(Math.round(centerX));
             tile.setCenterY(Math.round(centerY));
-            tile.setScale(letterScale * tileScale);
+            tile.setScale(letterScale * tileScale * 2);
         }
 
         // ========== Hit Detection ==========

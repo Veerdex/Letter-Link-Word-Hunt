@@ -3,12 +3,9 @@ package com.grantkoupal.letterlink;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.grantkoupal.letterlink.quantum.Action;
 import com.grantkoupal.letterlink.quantum.Agent;
@@ -22,10 +19,11 @@ import java.util.List;
  */
 public class GuessTable extends Agent {
 
+    private final int VISIBLE_ROWS = 8;
+
     // ========== Graphics ==========
     private BitmapFont font;
     private GlyphLayout fontLayout;
-    private FrameBuffer fb;
     private final int fontSize = 32;
 
     // ========== Data ==========
@@ -51,8 +49,6 @@ public class GuessTable extends Agent {
         this.listOfWordsFound = listOfWordsFound;
         this.listSize = listOfWordsFound.size();
 
-        fb = new FrameBuffer(Pixmap.Format.RGBA8888, Source.getScreenWidth(), Source.getScreenHeight(), false);
-
         fontLayout = new GlyphLayout();
         initializeFont();
         setupScrollAnimation();
@@ -74,21 +70,6 @@ public class GuessTable extends Agent {
                 handleScrollInput(delta);
             }
         }));
-    }
-
-    @Override
-    public void frame() {
-        // Setup framebuffer resize handler
-        getPage().addResize(new com.grantkoupal.letterlink.quantum.Process() {
-            @Override
-            public boolean run() {
-                if (fb != null) {
-                    fb.dispose();
-                }
-                fb = new FrameBuffer(Pixmap.Format.RGBA8888, Source.getScreenWidth(), Source.getScreenHeight(), false);
-                return true;
-            }
-        });
     }
 
     // ========== Scroll Handling ==========
@@ -133,8 +114,7 @@ public class GuessTable extends Agent {
     public void draw(ShapeRenderer sr, SpriteBatch sb) {
         calculateLayout();
         handleNewWordAdded();
-        renderToFrameBuffer(sb);
-        renderFrameBufferToScreen(sb);
+        render(sb);
     }
 
     /**
@@ -143,9 +123,9 @@ public class GuessTable extends Agent {
     private void calculateLayout() {
         float yScale = Source.getScreenHeight() / 3000f;
         float xScale = Source.getScreenWidth() / 1500f;
-        scale = (float) Math.min(xScale, yScale);
+        scale = Math.min(xScale, yScale);
         hintX = Source.getScreenWidth() / 2f;
-        hintY = Source.getScreenHeight() / 2f - scale * 1400;
+        hintY = Source.getScreenHeight() / 2f - scale * 1350;
         font.getData().setScale(scale * (64f / fontSize));
     }
 
@@ -162,36 +142,14 @@ public class GuessTable extends Agent {
     /**
      * Renders the word list to the framebuffer.
      */
-    private void renderToFrameBuffer(SpriteBatch sb) {
-        fb.begin();
-        Gdx.gl.glClearColor(0, 0, 0, 0);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+    private void render(SpriteBatch sb) {
 
         font.setColor(Color.WHITE);
 
         sb.begin();
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < VISIBLE_ROWS; i++) {
             printWord(sb, i);
         }
-        sb.end();
-
-        fb.end();
-    }
-
-    /**
-     * Draws the framebuffer content to the screen at the table position.
-     */
-    private void renderFrameBufferToScreen(SpriteBatch sb) {
-        int tableWidth = (int) (640 * scale);
-        int tableHeight = (int) (600 * scale);
-
-        sb.begin();
-        sb.draw(fb.getColorBufferTexture(),
-            hintX, hintY,           // Screen position
-            tableWidth, tableHeight, // Screen size
-            0, 0,                   // Framebuffer source position
-            tableWidth, tableHeight, // Framebuffer source size
-            false, true);           // Flip vertically
         sb.end();
     }
 
@@ -211,6 +169,14 @@ public class GuessTable extends Agent {
         String word = listOfWordsFound.get(wordIndex);
         float yPos = (y - scroll % 1) * 75 * scale;
 
+        if(y == 0){
+            font.setColor(1, 1, 1, 1 - scroll % 1);
+        } else if(y == VISIBLE_ROWS - 1){
+            font.setColor(1, 1, 1, scroll % 1);
+        } else {
+            font.setColor(Color.WHITE);
+        }
+
         // Draw each letter of the word
         for (int i = 0; i < word.length(); i++) {
             drawLetter(yPos, i * 50 * scale, "" + word.charAt(i), sb);
@@ -227,8 +193,8 @@ public class GuessTable extends Agent {
     private void drawLetter(float y, float x, String letter, SpriteBatch sb) {
         fontLayout.setText(font, letter.toUpperCase());
 
-        x -= fontLayout.width / 2 - 30 * scale;
-        y += fontLayout.height + 15 * scale;
+        x += -fontLayout.width / 2 + hintX;
+        y += fontLayout.height / 2 + hintY;
 
         font.draw(sb, letter.toUpperCase(), x, y);
     }
@@ -237,8 +203,5 @@ public class GuessTable extends Agent {
 
     @Override
     public void dispose() {
-        if (fb != null) {
-            fb.dispose();
-        }
     }
 }

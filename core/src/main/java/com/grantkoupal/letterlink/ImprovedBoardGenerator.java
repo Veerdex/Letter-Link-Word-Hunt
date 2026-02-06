@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import static com.grantkoupal.letterlink.HintTable.sortByLengthDescThenAlphabetically;
+
 /**
  * Research-backed board generator using hill climbing and simulated annealing.
  *
@@ -92,6 +94,75 @@ public class ImprovedBoardGenerator {
         }
 
         return bestBoard;
+    }
+
+    private static final int MIN_POINTS_THRESHOLD = 100000;
+    private static int power;
+    private static int width;
+    private static int height;
+    private static List<String> wordsInBoard = new ArrayList<>();
+    private static List<Boolean> wordsFound = new ArrayList<>();
+    private static List<String> listOfWordsFound = new ArrayList<>();
+
+    public static void generateBoard(int power, int width, int height){
+        ImprovedBoardGenerator.power = power;
+        ImprovedBoardGenerator.width = width;
+        ImprovedBoardGenerator.height = height;
+        generate();
+    }
+
+     /**
+     * Generates a board layout using the Solver with the specified difficulty.
+     * Recursively regenerates until minimum point threshold is met.
+     */
+    private static void generate() {
+        Solver.setBoard(width, height, generateBoardString(power));
+        Solver.resetWords();
+        listOfWordsFound.clear();
+        wordsFound.clear();
+
+        // Find all valid words in the board
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                Solver.checkWords(x, y, "", new int[width][height], new ArrayList<>());
+            }
+        }
+
+        // Regenerate if board doesn't meet minimum points threshold
+        int points = Solver.calculatePoints();
+        if (points < MIN_POINTS_THRESHOLD) {
+            generate();
+            return;
+        }
+
+        Solver.setBoardValue(points);
+        wordsInBoard = Solver.getTreasureWords();
+        sortByLengthDescThenAlphabetically(wordsInBoard);
+
+        // Initialize word found tracking
+        for (int i = 0; i < wordsInBoard.size(); i++) {
+            wordsFound.add(false);
+        }
+    }
+
+    /**
+     * Selects a board generation algorithm based on power level.
+     * @param power Difficulty level (0 = easiest/fastest, 9 = hardest/slowest)
+     * @return Generated board string
+     */
+    private static String generateBoardString(int power) {
+        switch (power) {
+            case 0: return generateFastLevel3(width, height);
+            case 1: return generateFastLevel2_5(width, height);
+            case 2: return generateFastLevel2(width, height);
+            case 3: return generateFastLevel1_5(width, height);
+            case 4: return generateFastLevel1(width, height);
+            case 5: return generateOptimizedBoard(width, height);
+            case 6: return generateClusteredBoard(width, height);
+            case 7: return generateOptimalBoard(width, height);
+            case 8: return generateBestBoard(width, height);
+            default: return generateHybridBoard(width, height);
+        }
     }
 
     /**

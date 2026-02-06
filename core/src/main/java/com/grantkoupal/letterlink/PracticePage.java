@@ -14,9 +14,6 @@ import java.util.List;
 public class PracticePage extends Page {
 
     // ========== Constants ==========
-    private static final int BOARD_WIDTH = 4;
-    private static final int BOARD_HEIGHT = 4;
-    private static final int DIFFICULTY_POWER = 4;
 
     // ========== Game Components ==========
     private Board board;
@@ -30,17 +27,7 @@ public class PracticePage extends Page {
 
     @Override
     public void initialize() {
-        createBoard();
-        createUIComponents();
-        setupResizeHandler();
-    }
-
-    /**
-     * Creates and initializes the game board with specified difficulty.
-     * Also logs performance metrics and predicted score.
-     */
-    private void createBoard() {
-        long startTime = System.nanoTime();
+        board = new Board(Solver.getBoardWidth(), Solver.getBoardHeight(), Solver.getBoard());
 
         /*
         Board Generation Performance (4x4 grid, 3 min or 100 iterations):
@@ -56,11 +43,13 @@ public class PracticePage extends Page {
         Power 9 -> Time: 25.84s Points: 977,557   Rating: 37,828
         */
 
-        board = new Board(BOARD_WIDTH, BOARD_HEIGHT, DIFFICULTY_POWER);
         board.addAnimations(this);
         add(board);
 
         logBoardStatistics();
+
+        createUIComponents();
+        setupResizeHandler();
     }
 
     /**
@@ -145,6 +134,9 @@ public class PracticePage extends Page {
         board.dispose();
         guessTable.dispose();
         hintTable.dispose();
+        chainDisplay.dispose();
+        pointsDisplay.dispose();
+        menuDisplay.dispose();
         DataManager.dispose();
     }
 }

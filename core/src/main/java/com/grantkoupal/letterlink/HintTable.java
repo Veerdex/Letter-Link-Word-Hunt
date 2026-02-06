@@ -3,12 +3,9 @@ package com.grantkoupal.letterlink;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.grantkoupal.letterlink.quantum.Action;
 import com.grantkoupal.letterlink.quantum.Agent;
@@ -27,13 +24,12 @@ import java.util.List;
 public class HintTable extends Agent {
 
     // ========== Constants ==========
-    private static final int VISIBLE_ROWS = 10;
+    private static final int VISIBLE_ROWS = 8;
     private static final String HIDDEN_WORD_PLACEHOLDER = "??????????????????????????????";
 
     // ========== Graphics ==========
     private BitmapFont font;
     private GlyphLayout fontLayout;
-    private FrameBuffer fb;
     private final int fontSize = 32;
 
     // ========== Data ==========
@@ -62,7 +58,6 @@ public class HintTable extends Agent {
 
         sortByLengthDescThenAlphabetically(this.validWords);
 
-        fb = new FrameBuffer(Pixmap.Format.RGBA8888, Source.getScreenWidth(), Source.getScreenHeight(), false);
         fontLayout = new GlyphLayout();
 
         initializeFont();
@@ -85,21 +80,6 @@ public class HintTable extends Agent {
                 handleScrollInput(delta);
             }
         }));
-    }
-
-    @Override
-    public void frame() {
-        // Setup framebuffer resize handler
-        getPage().addResize(new com.grantkoupal.letterlink.quantum.Process() {
-            @Override
-            public boolean run() {
-                if (fb != null) {
-                    fb.dispose();
-                }
-                fb = new FrameBuffer(Pixmap.Format.RGBA8888, Source.getScreenWidth(), Source.getScreenHeight(), false);
-                return true;
-            }
-        });
     }
 
     // ========== Utility Methods ==========
@@ -174,7 +154,6 @@ public class HintTable extends Agent {
     public void draw(ShapeRenderer sr, SpriteBatch sb) {
         calculateLayout();
         renderToFrameBuffer(sb);
-        renderFrameBufferToScreen(sb);
     }
 
     /**
@@ -185,7 +164,7 @@ public class HintTable extends Agent {
         float xScale = Source.getScreenWidth() / 1500f;
         scale = (float) Math.min(xScale, yScale);
         hintX = Source.getScreenWidth() / 2f - scale * 650;
-        hintY = Source.getScreenHeight() / 2f - scale * 1400;
+        hintY = Source.getScreenHeight() / 2f - scale * 1350;
         font.getData().setScale(scale * (64f / fontSize));
     }
 
@@ -193,9 +172,6 @@ public class HintTable extends Agent {
      * Renders the word list to the framebuffer.
      */
     private void renderToFrameBuffer(SpriteBatch sb) {
-        fb.begin();
-        Gdx.gl.glClearColor(0, 0, 0, 0);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         font.setColor(Color.WHITE);
 
@@ -203,25 +179,6 @@ public class HintTable extends Agent {
         for (int i = 0; i < VISIBLE_ROWS; i++) {
             printWord(sb, i);
         }
-        sb.end();
-
-        fb.end();
-    }
-
-    /**
-     * Draws the framebuffer content to the screen at the table position.
-     */
-    private void renderFrameBufferToScreen(SpriteBatch sb) {
-        int tableWidth = (int) (640 * scale);
-        int tableHeight = (int) (600 * scale);
-
-        sb.begin();
-        sb.draw(fb.getColorBufferTexture(),
-            hintX, hintY,           // Screen position (left side)
-            tableWidth, tableHeight, // Screen size
-            0, 0,                   // Framebuffer source position
-            tableWidth, tableHeight, // Framebuffer source size
-            false, true);           // Flip vertically
         sb.end();
     }
 
@@ -238,16 +195,28 @@ public class HintTable extends Agent {
         // Determine display word and color
         if (!wordsFound.get(wordIndex)) {
             word = HIDDEN_WORD_PLACEHOLDER;
-            font.setColor(Color.WHITE);
+            if(rowIndex == 0){
+                font.setColor(1, 1, 1, 1 - scroll % 1);
+            } else if(rowIndex == VISIBLE_ROWS - 1){
+                font.setColor(1, 1, 1, scroll % 1);
+            } else {
+                font.setColor(Color.WHITE);
+            }
         } else {
             word = validWords.get(wordIndex);
-            font.setColor(Color.GOLD);
+            if(rowIndex == 0){
+                font.setColor(1, 0.84313726f, 0, 1 - scroll % 1);
+            } else if(rowIndex == VISIBLE_ROWS - 1){
+                font.setColor(1, 0.84313726f, 0, scroll % 1);
+            } else {
+                font.setColor(Color.GOLD);
+            }
         }
 
         float yPos = (rowIndex - scroll % 1) * 75 * scale;
 
         // Draw each letter
-        int actualWordLength = validWords.get(wordIndex).length();
+        int actualWordLength = Math.min(validWords.get(wordIndex).length(), 12);
         for (int i = 0; i < actualWordLength; i++) {
             drawLetter(yPos, i * 50 * scale, "" + word.charAt(i), sb);
         }
@@ -263,8 +232,8 @@ public class HintTable extends Agent {
     private void drawLetter(float y, float x, String letter, SpriteBatch sb) {
         fontLayout.setText(font, letter.toUpperCase());
 
-        x -= fontLayout.width / 2 - 30 * scale;
-        y += fontLayout.height + 15 * scale;
+        x += -fontLayout.width / 2 + hintX;
+        y += fontLayout.height / 2 + hintY;
 
         font.draw(sb, letter.toUpperCase(), x, y);
     }
@@ -273,8 +242,5 @@ public class HintTable extends Agent {
 
     @Override
     public void dispose() {
-        if (fb != null) {
-            fb.dispose();
-        }
     }
 }

@@ -13,8 +13,8 @@ public class Solver {
 
     // ========== Constants ==========
 
+    private static int boardValue = 0;
     private static final int ALPHABET_SIZE = 26;
-    private static final char LETTER_A = 'a';
     private static final int ASCII_OFFSET = 97; // 'a' in ASCII
     private static final String DICTIONARY_FILE = "Words.txt";
 
@@ -492,5 +492,21 @@ public class Solver {
      */
     public static int getNumWords() {
         return wordPaths.size();
+    }
+
+    public static int getBoardValue(){
+        return boardValue;
+    }
+
+    public static void setBoardValue(int value){
+        boardValue = value;
+    }
+
+    public static int getBoardWidth(){
+        return boardWidth;
+    }
+
+    public static int getBoardHeight(){
+        return boardHeight;
     }
 }
