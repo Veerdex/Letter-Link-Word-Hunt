@@ -509,4 +509,32 @@ public class Solver {
     public static int getBoardHeight(){
         return boardHeight;
     }
+
+    private static int points;
+
+    public static float calculateRank(List<String> foundWords){
+        points = 0;
+        for(int i = 0; i < foundWords.size(); i++){
+            points += getWordValue(foundWords.get(i));
+        }
+
+        return adjust(50, 25, 0);
+    }
+
+    private static float adjust(float rank, float change, int iteration){
+        int tempPoints = 0;
+        for(int i = 0; i < treasureWords.size(); i++){
+            if(WordDifficultyRanker.wordDifficulty(treasureWords.get(i)) < rank){
+                tempPoints += getWordValue(treasureWords.get(i));
+            }
+        }
+
+        if(iteration == 100){
+            return rank;
+        } else if(points > tempPoints){
+            return adjust(rank + change, change / 2, iteration + 1);
+        } else {
+            return adjust(rank - change, change / 2, iteration + 1);
+        }
+    }
 }

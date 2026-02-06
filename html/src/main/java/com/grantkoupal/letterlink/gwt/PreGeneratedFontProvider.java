@@ -5,7 +5,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.utils.ObjectMap;
 
 // In your HTML module
-public class PreGeneratedFontProvider implements com.grantkoupal.letterlink.quantum.FontProvider {
+public class PreGeneratedFontProvider implements com.grantkoupal.letterlink.quantum.font.FontProvider {
     private ObjectMap<String, BitmapFont> fonts;
 
     public PreGeneratedFontProvider() {

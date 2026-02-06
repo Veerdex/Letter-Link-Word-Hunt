@@ -12,9 +12,10 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.grantkoupal.letterlink.quantum.*;
+import com.grantkoupal.letterlink.quantum.core.*;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -80,6 +81,9 @@ public class Board extends Agent {
     private float boardBackgroundScale = 1;
     private float boardX = 0;
     private float boardY = 0;
+    private float mouseDirection = 0;
+    private float deltaX = 0;
+    private float deltaY = 0;
 
     // ========== Tile Selection State ==========
 
@@ -92,7 +96,9 @@ public class Board extends Agent {
     // ========== Animation ==========
 
     private final List<Animation> tileAnimations = new ArrayList<>();
-    private final Color traceColor = new Color(1, 0, 0, TRACE_ALPHA);
+    private final Color traceColor = DataManager.chainColor;
+    private final long startTime;
+    private long nextLog = 10000;
 
     // ========== Constructor ==========
 
@@ -102,6 +108,7 @@ public class Board extends Agent {
      * @param height Number of rows (minimum 4)
      */
     public Board(int width, int height, List<List<Character>> board) {
+        startTime = System.currentTimeMillis();
         this.board = board;
         boardValue = Solver.getBoardValue();
         wordsInBoard = Solver.getTreasureWords();
@@ -155,6 +162,8 @@ public class Board extends Agent {
 
     // ========== Animation Management ==========
 
+    private final LinkedList<Integer> prevDeltas = new LinkedList<>();
+
     /**
      * Registers all tile animations and word checking logic with the page.
      * @param page Parent page to add animations to
@@ -164,6 +173,26 @@ public class Board extends Agent {
             page.addAnimation(animation);
         }
         page.addAnimation(createWordCheckAnimation());
+
+        page.addTimer(new Timer(.01f, Timer.INDEFINITE, new TimeFrame(){
+            @Override
+            public void run(long iteration){
+                int dx = Source.getScreenMouseX() - prevMouseX;
+                int dy = Source.getScreenMouseY() - prevMouseY;
+                prevMouseX = Source.getScreenMouseX();
+                prevMouseY = Source.getScreenMouseY();
+
+                deltaX += dx;
+                deltaY += dy;
+                prevDeltas.addFirst(dy);
+                prevDeltas.addFirst(dx);
+                if(prevDeltas.size() > 10){
+                    deltaY -= prevDeltas.removeLast();
+                    deltaX -= prevDeltas.removeLast();
+                }
+                //System.out.println(deltaX + ", " + deltaY);
+            }
+        }));
     }
 
     /**
@@ -360,6 +389,14 @@ public class Board extends Agent {
 
     @Override
     public void draw(ShapeRenderer sr, SpriteBatch sb) {
+
+        if(System.currentTimeMillis() - startTime > nextLog){
+            nextLog += 10000;
+            new Thread(() -> {
+                System.out.println(Math.pow(Solver.calculateRank(listOfWordsFound), 1.25f));
+            }).start();
+        }
+
         calculateLayout();
         drawBackground(sb);
         drawTextBackground(sb);
@@ -407,7 +444,7 @@ public class Board extends Agent {
         textBackground.draw(sb);
         textBackground.setColor(Color.WHITE);
         textBackground.setCenter(Source.getScreenWidth() / 2f, Source.getScreenHeight() / 2f - boardBackgroundScale * 1125);
-        textBackground.setScale(725f / textBackground.getTexture().getHeight() * boardBackgroundScale);
+        textBackground.setScale(2.64598f * boardBackgroundScale * DataManager.bottomTextScale);
         textBackground.draw(sb);
         sb.end();
     }
@@ -420,7 +457,7 @@ public class Board extends Agent {
         sb.begin();
         drawBoardShadow(sb);
         boardBackground.setColor(1, 1, 1, 1);
-        boardBackground.setScale(1400f / boardBackground.getTexture().getWidth() * boardBackgroundScale);
+        boardBackground.setScale(2.734375f * boardBackgroundScale * DataManager.boardScale);
         boardBackground.draw(sb);
         sb.end();
     }
@@ -457,7 +494,7 @@ public class Board extends Agent {
     private void drawTiles(SpriteBatch sb) {
         sb.begin();
 
-        font.setColor(Color.WHITE);
+        font.setColor(DataManager.tileTextColor);
 
         // Draw all tiles except the hovered one
         for (Tile tile : tiles) {
@@ -503,6 +540,24 @@ public class Board extends Agent {
 
         float x = tile.x * (100 * scale) + boardX - width * (50 * scale) + 50 * scale - tile.layout.width / 2;
         float y = tile.y * (100 * scale) + boardY - height * (50 * scale) + 50 * scale + tile.layout.height / 2;
+
+        Color originalColor = font.getColor().cpy(); // Save original color
+
+        // Draw black outline
+        if(DataManager.tileTextOutline) {
+            font.setColor(Color.BLACK);
+            int outlineThickness = 2;
+            for (int dx = -outlineThickness; dx <= outlineThickness; dx++) {
+                for (int dy = -outlineThickness; dy <= outlineThickness; dy++) {
+                    if (dx != 0 || dy != 0) {
+                        font.draw(sb, tile.letter.toUpperCase(), x + dx, y + dy);
+                    }
+                }
+            }
+        }
+
+        // Draw main letter
+        font.setColor(originalColor);
         font.draw(sb, tile.letter.toUpperCase(), x, y);
     }
 
@@ -537,17 +592,143 @@ public class Board extends Agent {
         fb.end();
     }
 
+    private int prevMouseX = 0;
+    private int prevMouseY = 0;
+
     /**
      * Draws a line from the mouse cursor to the first tile in the chain.
      */
     private void drawTraceFromMouseToFirstTile(ShapeRenderer sr) {
         float mouseX = Source.getScreenMouseX();
         float mouseY = Source.getScreenHeight() - Source.getScreenMouseY();
-        float firstTileX = convertToScreenX(tileChain.get(0).x);
-        float firstTileY = convertToScreenY(tileChain.get(0).y);
+        int tileX = tileChain.get(0).x;
+        int tileY = tileChain.get(0).y;
+        float firstTileX = convertToScreenX(tileX);
+        float firstTileY = convertToScreenY(tileY);
+        //Snappy
+        /*mouseDirection = (float)((Math.atan2(mouseY - firstTileY, mouseX - firstTileX) + Math.PI / 2) * 180 / Math.PI);
+        float distance = (float)Math.sqrt(Math.pow(mouseX - firstTileX, 2) + Math.pow(mouseY - firstTileY, 2));
+        int mouseDeltaDirection = directionToSector45((float)((Math.atan2(-deltaY, deltaX) + Math.PI / 2) * (180 / Math.PI)));
+        if(distance > 60 * scale && directionToSector45(mouseDirection) == mouseDeltaDirection){
+            switch(mouseDeltaDirection){
+                case 0 : chain(tileX, tileY + 1); break;
+                case 1 : chain(tileX + 1, tileY + 1); break;
+                case 2 : chain(tileX + 1, tileY); break;
+                case 3 : chain(tileX + 1, tileY - 1); break;
+                case 4 : chain(tileX, tileY - 1); break;
+                case 5 : chain(tileX - 1, tileY - 1); break;
+                case 6 : chain(tileX - 1, tileY); break;
+                case 7 : chain(tileX - 1, tileY + 1); break;
+            }
+        }*/
 
         sr.rectLine(mouseX, mouseY, firstTileX, firstTileY, TRACE_WIDTH * scale);
         sr.circle(mouseX, mouseY, TRACE_WIDTH / 2 * scale);
+    }
+
+    private void chain(int x, int y){
+        Tile t;
+        if((t = getTile(x, y)) != null){
+            t.quickSelect();
+        }
+    }
+
+    private Tile getTile(int x, int y){
+        // Bounds check
+        if (x < 0 || x >= width || y < 0 || y >= height) {
+            return null;
+        }
+
+        // Formula: column * height + (reversed y index)
+        int index = x * height + (height - 1 - y);
+        return tiles.get(index);
+    }
+
+    /**
+     * Converts a direction angle to a discrete value from 0-7.
+     * Each value represents a 45-degree sector.
+     */
+    private int directionToSector45(float direction) {
+        // Normalize angle to [0, 360) range
+        float normalized = direction;
+        if (normalized < 0) {
+            normalized += 360;
+        }
+
+        // Add 22.5 degrees offset so that 0 is centered at [-22.5, 22.5]
+        normalized += 22.5f;
+
+        // Handle wraparound (e.g., 360 becomes 0)
+        if (normalized >= 360) {
+            normalized -= 360;
+        }
+
+        // Divide by 45 to get sector (0-7)
+        int sector = (int)(normalized / 45f);
+
+        // Clamp to valid range just in case of floating point edge cases
+        return Math.min(sector, 7);
+    }
+
+    public static float averageAngles(float angle1, float angle2) {
+        // Normalize both angles to [0, 360)
+        angle1 = normalizeAngle(angle1);
+        angle2 = normalizeAngle(angle2);
+
+        // Check if we need to wrap around 0°
+        float diff = Math.abs(angle1 - angle2);
+
+        if (diff > 180) {
+            // Wrapping case: e.g., average of 350° and 10° should be 0°, not 180°
+            float sum = angle1 + angle2 + 360;
+            return (sum / 2) % 360;
+        } else {
+            // Normal case
+            return (angle1 + angle2) / 2;
+        }
+    }
+
+    private static float normalizeAngle(float angle) {
+        angle = angle % 360;
+        if (angle < 0) {
+            angle += 360;
+        }
+        return angle;
+    }
+
+    /**
+     * Converts a direction angle to a discrete value from 0-7.
+     * Cardinal directions (0,2,4,6) have 60-degree sectors.
+     * Diagonal directions (1,3,5,7) have 30-degree sectors.
+     *
+     * 0 = [-30, 30]      (North) - 60°
+     * 1 = [30, 60]       (North-East) - 30°
+     * 2 = [60, 120]      (East) - 60°
+     * 3 = [120, 150]     (South-East) - 30°
+     * 4 = [150, 210]     (South) - 60°
+     * 5 = [210, 240]     (South-West) - 30°
+     * 6 = [240, 300]     (West) - 60°
+     * 7 = [300, 330]     (North-West) - 30°
+     */
+    private int directionToSector60(float direction) {
+        // Normalize angle to [0, 360) range
+        float normalized = direction;
+        if (normalized < 0) {
+            normalized += 360;
+        }
+
+        // Define boundaries for each sector
+        // Cardinals get 60°, diagonals get 30°
+        if (normalized >= 330 || normalized < 30) return 0;  // North (60°)
+        if (normalized >= 30 && normalized < 60) return 1;   // NE (30°)
+        if (normalized >= 60 && normalized < 120) return 2;  // East (60°)
+        if (normalized >= 120 && normalized < 150) return 3; // SE (30°)
+        if (normalized >= 150 && normalized < 210) return 4; // South (60°)
+        if (normalized >= 210 && normalized < 240) return 5; // SW (30°)
+        if (normalized >= 240 && normalized < 300) return 6; // West (60°)
+        if (normalized >= 300 && normalized < 330) return 7; // NW (30°)
+
+        return 0; // Fallback (shouldn't reach here)
     }
 
     /**
@@ -658,7 +839,7 @@ public class Board extends Agent {
             sb.setShader(Shader.blurShader);
             Shader.blurShader.setUniformf("u_tint", 0f, 0f, 0f, 0.5f);
             Shader.blurShader.setUniformf("blurSize", .01f);
-            tile.setScale(scale * .3f);
+            tile.setScale(scale * .3f * DataManager.tileScale);
             tile.draw(sb);
             sb.setShader(null);
         }
@@ -760,6 +941,16 @@ public class Board extends Agent {
             }
         }
 
+        private void quickSelect(){
+            if(!added) {
+                added = true;
+                tileChain.add(0, this);
+                stringChain = stringChain.concat(letter);
+                previousTile = this;
+                updateChainState();
+            }
+        }
+
         /**
          * Removes the last tile from the chain if hovering over the second-to-last tile.
          */
@@ -784,11 +975,11 @@ public class Board extends Agent {
         private void updateTilePosition(float offsetX, float offsetY) {
             float centerX = x * (100 * scale) + boardX - width * (50 * scale) + 50 * scale + offsetX * scale;
             float centerY = y * (100 * scale) + boardY - height * (50 * scale) + 50 * scale + offsetY * scale;
-            float tileScale = scale * (95f / tile.getTexture().getHeight());
+            float tileScale = scale * 0.185546f;
 
             tile.setCenterX(Math.round(centerX));
             tile.setCenterY(Math.round(centerY));
-            tile.setScale(letterScale * tileScale * 2);
+            tile.setScale(letterScale * tileScale * 2 * DataManager.tileScale);
         }
 
         // ========== Hit Detection ==========

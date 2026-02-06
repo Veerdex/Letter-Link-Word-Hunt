@@ -7,9 +7,9 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.grantkoupal.letterlink.quantum.Action;
-import com.grantkoupal.letterlink.quantum.Agent;
-import com.grantkoupal.letterlink.quantum.Animation;
+import com.grantkoupal.letterlink.quantum.core.Action;
+import com.grantkoupal.letterlink.quantum.core.Agent;
+import com.grantkoupal.letterlink.quantum.core.Animation;
 
 import java.util.ArrayList;
 import java.util.Collections;

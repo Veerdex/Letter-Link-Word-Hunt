@@ -12,7 +12,7 @@ public class Lwjgl3Launcher {
     }
 
     private static Lwjgl3Application createApplication() {
-        com.grantkoupal.letterlink.quantum.Manager.setOnDesktop(true);
+        com.grantkoupal.letterlink.quantum.core.Manager.setOnDesktop(true);
         return new Lwjgl3Application(new Source(new FreeTypeFontProvider()), getDefaultConfiguration());
     }
 

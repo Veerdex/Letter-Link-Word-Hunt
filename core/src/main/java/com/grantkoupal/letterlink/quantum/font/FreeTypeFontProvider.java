@@ -1,4 +1,4 @@
-package com.grantkoupal.letterlink.lwjgl3;
+package com.grantkoupal.letterlink.quantum.font;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -7,7 +7,6 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.PixmapPacker;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.utils.ObjectMap;
-import com.grantkoupal.letterlink.quantum.font.FontProvider;
 
 // In your desktop/android launcher or core code
 public class FreeTypeFontProvider implements FontProvider {

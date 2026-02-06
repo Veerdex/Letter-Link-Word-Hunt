@@ -2,8 +2,8 @@ package com.grantkoupal.letterlink;
 
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
-import com.grantkoupal.letterlink.quantum.Page;
-import com.grantkoupal.letterlink.quantum.Process;
+import com.grantkoupal.letterlink.quantum.core.Page;
+import com.grantkoupal.letterlink.quantum.core.Process;
 
 import java.util.List;
 
@@ -69,12 +69,12 @@ public class PracticePage extends Page {
             totalPossibleScore += wordValue;
 
             // Only count easier words in predicted score
-            if (WordDifficultyRanker.wordDifficulty(word) < 20) {
+            if (WordDifficultyRanker.wordDifficulty(word) < 25) {
                 predictedScore += wordValue;
             }
         }
 
-        System.out.println("Predicted Score: " + predictedScore);
+        System.out.println("Predicted Score(" + (int)Math.pow(25, 1.25) + "): " + predictedScore);
         System.out.println("Total Possible: " + totalPossibleScore);
     }
 

@@ -4,10 +4,10 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
-import com.grantkoupal.letterlink.quantum.Action;
-import com.grantkoupal.letterlink.quantum.Agent;
-import com.grantkoupal.letterlink.quantum.Animation;
-import com.grantkoupal.letterlink.quantum.Page;
+import com.grantkoupal.letterlink.quantum.core.Action;
+import com.grantkoupal.letterlink.quantum.core.Agent;
+import com.grantkoupal.letterlink.quantum.core.Animation;
+import com.grantkoupal.letterlink.quantum.core.Page;
 
 /**
  * A sleek loading animation with expanding/contracting bars in a wave pattern.
@@ -22,6 +22,7 @@ public class LoadingAnimation extends Agent {
     private float barWidth = 8f;
     private float barSpacing = 16f;
     private float maxBarHeight = 100f;
+    private float scale = 1;
 
     // Animation state
     private float time = 0f;
@@ -48,13 +49,18 @@ public class LoadingAnimation extends Agent {
 
     @Override
     public void draw(ShapeRenderer sr, SpriteBatch sb) {
+        float yScale = Source.getScreenHeight() / 3000f;
+        float xScale = Source.getScreenWidth() / 1500f;
+        scale = Math.min(xScale, yScale) * 3f;
+
         sr.begin(ShapeRenderer.ShapeType.Filled);
 
-        float totalWidth = (BAR_COUNT - 1) * barSpacing;
+        // Fixed: totalWidth should be (BAR_COUNT - 1) and don't multiply startX by scale again
+        float totalWidth = (BAR_COUNT - 1) * barSpacing * scale;
         float startX = x - totalWidth / 2f;
 
         for (int i = 0; i < BAR_COUNT; i++) {
-            drawBar(sr, i, startX + i * barSpacing);
+            drawBar(sr, i, startX + i * barSpacing * scale);
         }
 
         sr.end();
@@ -65,7 +71,7 @@ public class LoadingAnimation extends Agent {
         float phase = time + index * 0.3f;
 
         // Height oscillates with sine wave
-        float height = maxBarHeight * (0.3f + 0.7f * MathUtils.sin(phase));
+        float height = maxBarHeight * (0.3f + 0.7f * MathUtils.sin(phase)) * scale;
 
         // Gradient color from start to end based on bar index
         float t = index / (float)(BAR_COUNT - 1);
@@ -83,11 +89,11 @@ public class LoadingAnimation extends Agent {
         sr.setColor(barColor);
 
         // Draw rounded bar (rectangle + circles on ends)
-        float halfWidth = barWidth / 2f;
+        float halfWidth = barWidth / 2f * scale;
         float halfHeight = height / 2f;
 
         // Main rectangle
-        sr.rect(barX - halfWidth, y - halfHeight, barWidth, height);
+        sr.rect(barX - halfWidth, y - halfHeight, barWidth * scale, height);
 
         // Top circle
         sr.circle(barX, y + halfHeight, halfWidth, 12);
@@ -97,8 +103,8 @@ public class LoadingAnimation extends Agent {
 
         // Glow effect
         sr.setColor(barColor.r, barColor.g, barColor.b, alpha * 0.2f);
-        sr.circle(barX, y + halfHeight, barWidth, 12);
-        sr.circle(barX, y - halfHeight, barWidth, 12);
+        sr.circle(barX, y + halfHeight, barWidth * scale, 12);
+        sr.circle(barX, y - halfHeight, barWidth * scale, 12);
     }
 
     public void setPosition(float x, float y) {

@@ -1,8 +1,8 @@
 package com.grantkoupal.letterlink;
 
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.grantkoupal.letterlink.quantum.FontProvider;
-import com.grantkoupal.letterlink.quantum.Manager;
+import com.grantkoupal.letterlink.quantum.font.FontProvider;
+import com.grantkoupal.letterlink.quantum.core.Manager;
 
 public class Source extends Manager {
 
@@ -26,11 +26,7 @@ public class Source extends Manager {
      * Loads game textures and fonts.
      */
     private void loadAssets() {
-        DataManager.setTileTexture("Polished Wood Tile.png");
-        DataManager.setBoardTexture("Smooth Blue.png");
-        DataManager.setBackgroundTexture("rosewood_veneer1_diff_1k.jpg");
-        DataManager.setFontName("Coiny");
-        DataManager.setBottomTextTexture("Wood.png");
+        ThemeManager.setCurrentTheme("Cabin");
         DataManager.setIcon("Checkmarks.png");
         DataManager.setUserName("Veerdex");
     }

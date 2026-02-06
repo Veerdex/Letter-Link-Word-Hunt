@@ -1,0 +1,14 @@
+Coiny
+0.56512
+0.512
+0.6
+255 145 50
+255 155 50 255
+
+Translation:
+Font Name
+Board Scale - 512x512
+Tile Scale - 512x512
+Text Background Scale - 1024x274
+Trace Color
+Tile Text Color

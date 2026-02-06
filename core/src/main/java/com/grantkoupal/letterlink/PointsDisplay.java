@@ -5,7 +5,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.grantkoupal.letterlink.quantum.*;
+import com.grantkoupal.letterlink.quantum.core.Agent;import com.grantkoupal.letterlink.quantum.core.Page;import com.grantkoupal.letterlink.quantum.core.TimeFrame;import com.grantkoupal.letterlink.quantum.core.Timer;import com.grantkoupal.letterlink.quantum.paint.Squircle;
 
 /**
  * Displays the player's current score with a smooth counting animation.

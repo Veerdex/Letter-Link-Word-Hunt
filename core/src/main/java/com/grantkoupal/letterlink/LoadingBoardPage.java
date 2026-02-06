@@ -1,9 +1,9 @@
 package com.grantkoupal.letterlink;
 
 import com.badlogic.gdx.Gdx;
-import com.grantkoupal.letterlink.quantum.Page;
-import com.grantkoupal.letterlink.quantum.TimeFrame;
-import com.grantkoupal.letterlink.quantum.Timer;
+import com.grantkoupal.letterlink.quantum.core.Page;
+import com.grantkoupal.letterlink.quantum.core.TimeFrame;
+import com.grantkoupal.letterlink.quantum.core.Timer;
 
 public class LoadingBoardPage extends Page {
 
@@ -12,7 +12,7 @@ public class LoadingBoardPage extends Page {
     private Thread loadingThread;
 
     @Override
-    public void initialize() {
+    public void initialize(){
         // Create spinner at center of screen
         float centerX = Gdx.graphics.getWidth() / 2f;
         float centerY = Gdx.graphics.getHeight() / 2f;
@@ -25,7 +25,7 @@ public class LoadingBoardPage extends Page {
             public void run() {
                 try {
                     // This is where the heavy loading happens
-                    ImprovedBoardGenerator.generateBoard(9, 4, 4);
+                    ImprovedBoardGenerator.generateBoard(4, 4, 4);
 
                     // Mark as complete
                     loadingComplete = true;

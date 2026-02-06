@@ -1,25 +1,33 @@
 package com.grantkoupal.letterlink;
 
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.grantkoupal.letterlink.quantum.Agent;
-import com.grantkoupal.letterlink.quantum.Graphic;
+import com.grantkoupal.letterlink.quantum.core.Agent;
+import com.grantkoupal.letterlink.quantum.core.Graphic;
 
 public class MenuDisplay extends Agent {
 
     private final int fontSize = 64;
     private final int MENU_HEIGHT = 325;
     private float scale = 1;
-    private Graphic icon;
-    private BitmapFont font;
-    private GlyphLayout layout;
-    private long startTime;
+    private final Texture hintTexture;
+    private final Graphic icon;
+    private final Graphic hint;
+    private final BitmapFont font;
+    private final GlyphLayout layout;
+    private final long startTime;
 
     public MenuDisplay(){
+
+        hintTexture = new Texture(Source.getAsset("Misc/Light Bulb.png"));
+        hintTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+
         icon = new Graphic(DataManager.iconTexture);
+        hint = new Graphic(hintTexture);
 
         font = Source.generateFont(DataManager.fontName, fontSize);
 
@@ -50,13 +58,15 @@ public class MenuDisplay extends Agent {
         icon.setScale(MENU_HEIGHT * scale / icon.getTexture().getWidth() * .833f);
         icon.setCenter(MENU_HEIGHT * scale / 2, Source.getScreenHeight() - MENU_HEIGHT * scale / 2);
 
-
+        hint.setScale(MENU_HEIGHT * scale / icon.getTexture().getWidth() * .5f);
+        hint.setCenter(Source.getScreenWidth() / 2f + 400 * scale, Source.getScreenHeight() - MENU_HEIGHT * scale / 2);
 
         font.getData().setScale(scale * (128f / fontSize));
         String clock = convertNumToTime(System.currentTimeMillis() - startTime);
         layout.setText(font, clock);
 
         sb.begin();
+        hint.draw(sb);
         icon.draw(sb);
         font.setColor(Color.BLACK);
         font.draw(sb, clock, Source.getScreenWidth() / 2f - layout.width / 2f, Source.getScreenHeight() - MENU_HEIGHT * scale * .833f + layout.height - 20 * scale);
@@ -92,6 +102,6 @@ public class MenuDisplay extends Agent {
 
     @Override
     public void dispose() {
-
+        hintTexture.dispose();
     }
 }
