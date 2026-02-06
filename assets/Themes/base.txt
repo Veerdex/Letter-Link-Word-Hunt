@@ -1,0 +1,7 @@
+Base Dimensions
+
+Board.png - 512x512
+GameBackground.png - Any
+TextBackground.png - 1024x274
+Tile.png - 512x512 (Size of the tile itself is 256x256)
+data.txt - (line by line)   Font, Board Scale, Tile Scale, Text Background Scale
