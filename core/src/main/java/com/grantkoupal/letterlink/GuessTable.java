@@ -95,7 +95,7 @@ public class GuessTable extends Agent {
      * @param f New scroll position
      */
     public void setScroll(float f) {
-        int maxScroll = Math.max(0, listOfWordsFound.size() - 8);
+        int maxScroll = Math.max(0, listOfWordsFound.size() - 7);
 
         if (f < 0) {
             scroll = 0;

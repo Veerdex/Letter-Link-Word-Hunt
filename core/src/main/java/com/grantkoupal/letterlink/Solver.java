@@ -3,6 +3,8 @@ package com.grantkoupal.letterlink;
 import com.badlogic.gdx.Gdx;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -58,18 +60,18 @@ public class Solver {
      * 4D word storage indexed by first three letters [a-z][a-z][a-z].
      * Provides O(1) prefix lookup for fast word validation during search.
      */
-    private static List<List<List<List<String>>>> dictionary = new ArrayList<>();
+    private static final List<List<List<List<String>>>> dictionary = new ArrayList<>();
 
     // ========== Board State ==========
 
-    private static List<List<Character>> board = new ArrayList<>();
+    private static final List<List<Character>> board = new ArrayList<>();
     private static int boardWidth = 0;
     private static int boardHeight = 0;
 
     // ========== Search Results ==========
 
-    private static List<String> treasureWords = new ArrayList<>();
-    private static List<List<Integer>> wordPaths = new ArrayList<>();
+    private static final List<String> treasureWords = new ArrayList<>();
+    private static final List<List<Integer>> wordPaths = new ArrayList<>();
     private static int[] wordLengthCounts = new int[26];
     private static int totalPoints = 0;
 
@@ -282,6 +284,49 @@ public class Solver {
         }
 
         return foundWords;
+    }
+
+    /**
+     * Sorts two parallel lists by the length of words in the first list (longest first), then alphabetically.
+     * Both lists are sorted in the same order to maintain index correspondence.
+     * @param list Primary list to sort by (determines sort order)
+     * @param parallelList Secondary list that will be reordered to match list's new order
+     */
+    public static void organize() {
+        // Create a list of indices
+        List<Integer> indices = new ArrayList<>();
+        for (int i = 0; i < treasureWords.size(); i++) {
+            indices.add(i);
+        }
+
+        // Sort indices based on the sorting criteria
+        Collections.sort(indices, new Comparator<Integer>() {
+            @Override
+            public int compare(Integer i1, Integer i2) {
+                String s1 = treasureWords.get(i1);
+                String s2 = treasureWords.get(i2);
+
+                // First compare by length (longest first)
+                int lengthCompare = Integer.compare(s2.length(), s1.length());
+
+                // If lengths are equal, compare alphabetically
+                if (lengthCompare == 0) {
+                    return s1.compareToIgnoreCase(s2);
+                }
+
+                return lengthCompare;
+            }
+        });
+
+        // Create temporary copies of both lists
+        List<String> tempList = new ArrayList<>(treasureWords);
+        List<List<Integer>> tempParallelList = new ArrayList<>(wordPaths);
+
+        // Reorder both lists based on sorted indices
+        for (int i = 0; i < indices.size(); i++) {
+            treasureWords.set(i, tempList.get(indices.get(i)));
+            wordPaths.set(i, tempParallelList.get(indices.get(i)));
+        }
     }
 
     /**

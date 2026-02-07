@@ -99,7 +99,7 @@ public class PracticePage extends Page {
         add(pointsDisplay);
 
         // Displays icon, time left, and rank
-        menuDisplay = new MenuDisplay();
+        menuDisplay = new MenuDisplay(board);
         add(menuDisplay);
     }
 

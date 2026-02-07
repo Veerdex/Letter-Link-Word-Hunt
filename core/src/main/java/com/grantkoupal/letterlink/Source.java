@@ -26,7 +26,7 @@ public class Source extends Manager {
      * Loads game textures and fonts.
      */
     private void loadAssets() {
-        ThemeManager.setCurrentTheme("Cabin");
+        ThemeManager.setCurrentTheme("Volcano");
         DataManager.setIcon("Checkmarks.png");
         DataManager.setUserName("Veerdex");
     }

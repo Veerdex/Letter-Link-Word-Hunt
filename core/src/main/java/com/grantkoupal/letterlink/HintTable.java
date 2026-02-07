@@ -112,6 +112,8 @@ public class HintTable extends Agent {
         });
     }
 
+
+
     // ========== Scroll Handling ==========
 
     /**

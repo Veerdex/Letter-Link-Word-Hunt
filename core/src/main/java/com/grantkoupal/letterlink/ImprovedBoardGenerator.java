@@ -1,10 +1,6 @@
 package com.grantkoupal.letterlink;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
-import static com.grantkoupal.letterlink.HintTable.sortByLengthDescThenAlphabetically;
+import java.util.*;
 
 /**
  * Research-backed board generator using hill climbing and simulated annealing.
@@ -136,8 +132,8 @@ public class ImprovedBoardGenerator {
         }
 
         Solver.setBoardValue(points);
+        Solver.organize();
         wordsInBoard = Solver.getTreasureWords();
-        sortByLengthDescThenAlphabetically(wordsInBoard);
 
         // Initialize word found tracking
         for (int i = 0; i < wordsInBoard.size(); i++) {

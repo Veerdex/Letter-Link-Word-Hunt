@@ -31,12 +31,14 @@ public class Board extends Agent {
     private static final Color RED_TINT = new Color(1, 0.8f, 0.8f, 1f);
     private static final Color YELLOW_TINT = new Color(1, 1, 0.7f, 1f);
     private static final Color GREEN_TINT = new Color(0.7f, 1, 0.7f, 1f);
+    private static final Color BLUE_TINT = new Color(0.7f, 0.7f, 1f, 1f);
+    private static final Color PINK_TINT = new Color(.5f, 1f, 1f, 1f);
 
     // Board constraints
     private static final int MIN_BOARD_SIZE = 4;
 
     // Visual constants
-    private static final float TRACE_WIDTH = 20f;
+    private static final float TRACE_WIDTH = 15f;
     private static final float TRACE_ALPHA = 0.5f;
 
     // ========== Letter State Enum ==========
@@ -48,7 +50,9 @@ public class Board extends Agent {
         UNSELECTED,  // Not part of current chain
         INVALID,     // Invalid word
         VALID,       // Valid new word
-        COPY         // Word already found
+        COPY,         // Word already found
+        HINT,
+        HINT_START
     }
 
     // ========== Textures and Graphics ==========
@@ -66,12 +70,13 @@ public class Board extends Agent {
     private int height;
     private List<List<Character>> board;
     private final List<Tile> tiles = new ArrayList<>();
+    public float currentRank = 0;
 
     // ========== Word Data ==========
 
-    private final List<String> wordsInBoard;
     private final List<Boolean> wordsFound = new ArrayList<>();
     private final List<String> listOfWordsFound = new ArrayList<>();
+    private final List<String> wordsLeft;
     private final int boardValue;
     private int totalPoints = 0;
 
@@ -111,8 +116,8 @@ public class Board extends Agent {
         startTime = System.currentTimeMillis();
         this.board = board;
         boardValue = Solver.getBoardValue();
-        wordsInBoard = Solver.getTreasureWords();
-        for(int i = 0; i < wordsInBoard.size(); i++){
+        wordsLeft = new ArrayList<>(Solver.getTreasureWords());
+        for(int i = 0; i < wordsLeft.size(); i++){
             wordsFound.add(false);
         }
         initializeFont();
@@ -215,11 +220,12 @@ public class Board extends Agent {
      * @return true if word was valid and newly found
      */
     public boolean check(String word) {
-        int index = wordsInBoard.indexOf(word);
+        int index = Solver.getTreasureWords().indexOf(word);
         if (index != -1 && !wordsFound.get(index)) {
             wordsFound.set(index, true);
             listOfWordsFound.add(word);
             totalPoints += Solver.getWordValue(word);
+            wordsLeft.remove(word);
             return true;
         }
         return false;
@@ -302,7 +308,7 @@ public class Board extends Agent {
      * @return 0 = already found, 1 = valid new word, 2 = invalid
      */
     private int getWordState() {
-        int index = wordsInBoard.indexOf(buildWordFromChain());
+        int index = Solver.getTreasureWords().indexOf(buildWordFromChain());
         if (index != -1) {
             return wordsFound.get(index) ? 0 : 1;
         }
@@ -358,7 +364,7 @@ public class Board extends Agent {
     }
 
     public List<String> getWordsInBoard() {
-        return wordsInBoard;
+        return Solver.getTreasureWords();
     }
 
     public List<Boolean> getWordsFound() {
@@ -385,6 +391,12 @@ public class Board extends Agent {
         return currentChainState;
     }
 
+    public List<String> getWordsLeft(){
+        return wordsLeft;
+    }
+
+    public float getCurrentRank(){return currentRank;}
+
     // ========== Drawing ==========
 
     @Override
@@ -393,7 +405,7 @@ public class Board extends Agent {
         if(System.currentTimeMillis() - startTime > nextLog){
             nextLog += 10000;
             new Thread(() -> {
-                System.out.println(Math.pow(Solver.calculateRank(listOfWordsFound), 1.25f));
+                currentRank = (float)Math.pow(Solver.calculateRank(listOfWordsFound), 1.25f);
             }).start();
         }
 
@@ -485,6 +497,12 @@ public class Board extends Agent {
                 return;
             case UNSELECTED:
                 tile.tile.setColor(Color.WHITE);
+                return;
+            case HINT:
+                tile.tile.setColor(BLUE_TINT);
+                return;
+            case HINT_START:
+                tile.tile.setColor(PINK_TINT);
         }
     }
 
@@ -505,10 +523,16 @@ public class Board extends Agent {
         // Draw all tiles except the hovered one
         for (Tile tile : tiles) {
             if (tile != currentTile) {
-                if (tileChain.size() != 0) {
+                if (!tileChain.isEmpty()) {
                     updateTileColor(tile);
                 } else {
-                    tile.tile.setColor(Color.WHITE);
+                    if(tile.state == LetterState.HINT){
+                        tile.tile.setColor(BLUE_TINT);
+                    } else if(tile.state == LetterState.HINT_START){
+                        tile.tile.setColor(PINK_TINT);
+                    } else {
+                        tile.tile.setColor(Color.WHITE);
+                    }
                 }
                 tile.drawTile(sb);
                 drawLetter(sb, tile);
@@ -517,7 +541,7 @@ public class Board extends Agent {
 
         // Draw hovered tile on top
         if (currentTile != null) {
-            if (tileChain.size() == 0 && Manager.isOnDesktop()) {
+            if (tileChain.isEmpty() && Manager.isOnDesktop() && currentTile.state != LetterState.HINT && currentTile.state != LetterState.HINT_START) {
                 currentTile.tile.setColor(RED_TINT);
             } else {
                 updateTileColor(currentTile);
@@ -779,6 +803,25 @@ public class Board extends Agent {
         return (height - gridY - 1) * (100 * scale) + boardY - height * (50 * scale) + 50 * scale;
     }
 
+    public void activateHint(String word){
+        for(Tile a : tiles){
+            a.state = LetterState.UNSELECTED;
+        }
+        List<Integer> path = Solver.getWordPath(Solver.getTreasureWords().indexOf(word));
+
+        for(int i = 0; i < path.size(); i+=2){
+            Tile t = getTile(path.get(i), path.get(i + 1));
+            if(t == null){
+                continue;
+            }
+            if(i == 0){
+                t.state = LetterState.HINT_START;
+            } else {
+                t.state = LetterState.HINT;
+            }
+        }
+    }
+
     // ========== Cleanup ==========
 
     @Override
@@ -919,7 +962,7 @@ public class Board extends Agent {
                 hover = false;
                 currentTile = null;
 
-                if (tileChain.size() == 0 && Manager.isOnDesktop()) {
+                if (tileChain.isEmpty() && Manager.isOnDesktop() && state != LetterState.HINT && state != LetterState.HINT_START) {
                     state = LetterState.UNSELECTED;
                     tile.setColor(Color.WHITE);
                 }
