@@ -63,6 +63,8 @@ public class Board extends Agent {
     private Graphic textBackground;
     private BitmapFont font;
     private FrameBuffer fb;
+    public static boolean menuOpen = false;
+    public static boolean settingsOpen = false;
 
     // ========== Board Structure ==========
 
@@ -71,6 +73,7 @@ public class Board extends Agent {
     private List<List<Character>> board;
     private final List<Tile> tiles = new ArrayList<>();
     public float currentRank = 0;
+    private long lastGuess = 0;
 
     // ========== Word Data ==========
 
@@ -101,9 +104,10 @@ public class Board extends Agent {
     // ========== Animation ==========
 
     private final List<Animation> tileAnimations = new ArrayList<>();
-    private final Color traceColor = DataManager.chainColor;
+    private final Color traceColor = com.grantkoupal.letterlink.DataManager.chainColor;
     private final long startTime;
     private long nextLog = 10000;
+    private int hintsUsed = 0;
 
     // ========== Constructor ==========
 
@@ -120,6 +124,7 @@ public class Board extends Agent {
         for(int i = 0; i < wordsLeft.size(); i++){
             wordsFound.add(false);
         }
+        lastGuess = System.currentTimeMillis();
         initializeFont();
         loadTextures();
         setDimensions(width, height);
@@ -130,17 +135,17 @@ public class Board extends Agent {
     // ========== Initialization ==========
 
     private void initializeFont() {
-        font = Source.generateFont(DataManager.fontName, 256);
+        font = Source.generateFont(com.grantkoupal.letterlink.DataManager.fontName, 256);
     }
 
     private void loadTextures() {
-        tileTexture = DataManager.tileTexture;
-        backgroundTexture = DataManager.backgroundTexture;
+        tileTexture = com.grantkoupal.letterlink.DataManager.tileTexture;
+        backgroundTexture = com.grantkoupal.letterlink.DataManager.backgroundTexture;
 
         backgroundTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
 
-        boardBackground = new Graphic(DataManager.boardTexture);
-        textBackground = new Graphic(DataManager.bottomTextTexture);
+        boardBackground = new Graphic(com.grantkoupal.letterlink.DataManager.boardTexture);
+        textBackground = new Graphic(com.grantkoupal.letterlink.DataManager.bottomTextTexture);
     }
 
     private void setDimensions(int width, int height) {
@@ -226,6 +231,7 @@ public class Board extends Agent {
             listOfWordsFound.add(word);
             totalPoints += Solver.getWordValue(word);
             wordsLeft.remove(word);
+            lastGuess = System.currentTimeMillis();
             return true;
         }
         return false;
@@ -235,7 +241,7 @@ public class Board extends Agent {
      * Handles word submission when the player releases the mouse.
      */
     private void handleWordSubmission() {
-        if (tileChain.size() > 0 && !Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
+        if (!tileChain.isEmpty() && !Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
             check(buildWordFromChain());
 
             // Reset all tiles in the chain
@@ -397,6 +403,29 @@ public class Board extends Agent {
 
     public float getCurrentRank(){return currentRank;}
 
+    public int getHintScore(){
+        return (int)(System.currentTimeMillis() - lastGuess) / 1000;
+    }
+
+    public int getHintsUsed(){return hintsUsed;}
+
+    public String getLongestWord(){
+        int length = 0;
+        String longestWord = "---";
+        for(int i = 0; i < listOfWordsFound.size(); i++){
+            int newLength = listOfWordsFound.get(i).length();
+            if(newLength > length){
+                longestWord = listOfWordsFound.get(i);
+                length = newLength;
+            }
+        }
+        return longestWord;
+    }
+
+    public long getGameDuration(){
+        return System.currentTimeMillis() - startTime;
+    }
+
     // ========== Drawing ==========
 
     @Override
@@ -414,6 +443,7 @@ public class Board extends Agent {
         drawTextBackground(sb);
         drawBoardBackground(sb);
         drawTiles(sb);
+        if(menuOpen) return;
         drawTraceLines(sr, sb);
     }
 
@@ -456,7 +486,7 @@ public class Board extends Agent {
         textBackground.draw(sb);
         textBackground.setColor(Color.WHITE);
         textBackground.setCenter(Source.getScreenWidth() / 2f, Source.getScreenHeight() / 2f - boardBackgroundScale * 1125);
-        textBackground.setScale(2.64598f * boardBackgroundScale * DataManager.bottomTextScale);
+        textBackground.setScale(2.64598f * boardBackgroundScale * com.grantkoupal.letterlink.DataManager.bottomTextScale);
         textBackground.draw(sb);
         sb.end();
     }
@@ -469,7 +499,7 @@ public class Board extends Agent {
         sb.begin();
         drawBoardShadow(sb);
         boardBackground.setColor(1, 1, 1, 1);
-        boardBackground.setScale(2.734375f * boardBackgroundScale * DataManager.boardScale);
+        boardBackground.setScale(2.734375f * boardBackgroundScale * com.grantkoupal.letterlink.DataManager.boardScale);
         boardBackground.draw(sb);
         sb.end();
     }
@@ -512,7 +542,7 @@ public class Board extends Agent {
     private void drawTiles(SpriteBatch sb) {
         sb.begin();
 
-        font.setColor(DataManager.tileTextColor);
+        font.setColor(com.grantkoupal.letterlink.DataManager.tileTextColor);
 
         // Draw all tiles except the hovered one
         for (Tile tile : tiles) {
@@ -568,7 +598,7 @@ public class Board extends Agent {
         Color originalColor = font.getColor().cpy(); // Save original color
 
         // Draw black outline
-        if(DataManager.tileTextOutline) {
+        if(com.grantkoupal.letterlink.DataManager.tileTextOutline) {
             font.setColor(Color.BLACK);
             int outlineThickness = 2;
             for (int dx = -outlineThickness; dx <= outlineThickness; dx++) {
@@ -804,6 +834,7 @@ public class Board extends Agent {
     }
 
     public void activateHint(String word){
+        hintsUsed++;
         for(Tile a : tiles){
             a.state = LetterState.UNSELECTED;
         }
@@ -882,7 +913,7 @@ public class Board extends Agent {
             sb.setShader(Shader.blurShader);
             Shader.blurShader.setUniformf("u_tint", 0f, 0f, 0f, 0.5f);
             Shader.blurShader.setUniformf("blurSize", .01f);
-            tile.setScale(scale * .3f * DataManager.tileScale);
+            tile.setScale(scale * .3f * com.grantkoupal.letterlink.DataManager.tileScale);
             tile.draw(sb);
             sb.setShader(null);
         }
@@ -907,6 +938,7 @@ public class Board extends Agent {
             animation = new Animation(System.nanoTime(), Animation.INDEFINITE, new Action() {
                 @Override
                 public void run(float delta) {
+                    if(menuOpen) return;
                     updateHoverState(delta);
                     handleTileSelection();
                     handleTileDeselection();
@@ -1022,7 +1054,7 @@ public class Board extends Agent {
 
             tile.setCenterX(Math.round(centerX));
             tile.setCenterY(Math.round(centerY));
-            tile.setScale(letterScale * tileScale * 2 * DataManager.tileScale);
+            tile.setScale(letterScale * tileScale * 2 * com.grantkoupal.letterlink.DataManager.tileScale);
         }
 
         // ========== Hit Detection ==========

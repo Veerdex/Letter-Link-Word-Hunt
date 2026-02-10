@@ -67,6 +67,7 @@ public class GuessTable extends Agent {
         Source.addAnimation(new Animation(System.nanoTime(), Animation.INDEFINITE, new Action() {
             @Override
             public void run(float delta) {
+                if(Board.menuOpen) return;
                 handleScrollInput(delta);
             }
         }));

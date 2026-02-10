@@ -22,6 +22,8 @@ public class PracticePage extends Page {
     private ChainDisplay chainDisplay;
     private PointsDisplay pointsDisplay;
     private MenuDisplay menuDisplay;
+    private PracticeMenu practiceMenu;
+    private Settings settings;
 
     // ========== Initialization ==========
 
@@ -99,8 +101,16 @@ public class PracticePage extends Page {
         add(pointsDisplay);
 
         // Displays icon, time left, and rank
-        menuDisplay = new MenuDisplay(board);
+        menuDisplay = new MenuDisplay(board, this);
         add(menuDisplay);
+
+        // Menu
+        practiceMenu = new PracticeMenu(this, board);
+        add(practiceMenu);
+
+        // Settings
+        settings = new Settings();
+        add(settings);
     }
 
     /**
@@ -137,6 +147,8 @@ public class PracticePage extends Page {
         chainDisplay.dispose();
         pointsDisplay.dispose();
         menuDisplay.dispose();
+        practiceMenu.dispose();
+        settings.dispose();
         DataManager.dispose();
     }
 }

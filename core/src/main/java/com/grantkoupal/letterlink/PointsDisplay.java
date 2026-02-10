@@ -55,7 +55,7 @@ public class PointsDisplay extends Agent {
      * Initializes the font with black color for score display.
      */
     private void initializeFont() {
-        font = Source.generateFont(DataManager.fontName, fontSize);
+        font = Source.generateFont(com.grantkoupal.letterlink.DataManager.fontName, fontSize);
         font.setColor(Color.BLACK);
     }
 

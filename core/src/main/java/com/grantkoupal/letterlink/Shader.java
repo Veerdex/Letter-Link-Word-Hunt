@@ -1,6 +1,6 @@
 package com.grantkoupal.letterlink;
 
-import com.badlogic.gdx.graphics.glutils.ShaderProgram;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 
 public class Shader {
 
@@ -34,5 +34,21 @@ public class Shader {
             "    gl_FragColor = (sum / 25.0) * u_tint;\n" +
             "}";
 
+    private static String fragment =
+        "#ifdef GL_ES\n" +
+            "precision mediump float;\n" +
+            "#endif\n" +
+            "varying vec4 v_color;\n" +
+            "varying vec2 v_texCoords;\n" +
+            "uniform sampler2D u_texture;\n" +
+            "uniform float u_brightness;\n" +
+            "void main() {\n" +
+            "  vec4 color = texture2D(u_texture, v_texCoords) * v_color;\n" +
+            "  color.rgb *= u_brightness;\n" +
+            "  gl_FragColor = color;\n" +
+            "}";
+
     public static ShaderProgram blurShader = new ShaderProgram(vertexShader, fragmentShader);
+
+    public static ShaderProgram glowShader = new ShaderProgram(SpriteBatch.createDefaultShader().getVertexShaderSource(), fragment);
 }

@@ -1,14 +1,6 @@
-Coiny
-1
-1
-1
-255 0 0
-255 255 255 255
-
-Translation:
-Font Name
-Board Scale - 512x512
-Tile Scale - 512x512
-Text Background Scale - 1024x274
-Trace Color
-Tile Text Color
+Coiny - Font Name
+1 1 1 - Board Scale(512), Tile Scale(256), Text Background Scale(y, 274)
+255 0 0 - Trace Color
+255 255 255 255 - Tile Text Color
+255 255 255 - Menu Color
+Blue - Menu Button Color (Red, Orange, Green, Blue)

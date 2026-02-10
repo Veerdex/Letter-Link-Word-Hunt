@@ -58,7 +58,7 @@ public class ChainDisplay extends Agent {
      * Initializes the font with black color for chain display.
      */
     private void initializeFont() {
-        font = Source.generateFont(DataManager.fontName, 128);
+        font = Source.generateFont(com.grantkoupal.letterlink.DataManager.fontName, 128);
         font.setColor(Color.BLACK);
     }
 

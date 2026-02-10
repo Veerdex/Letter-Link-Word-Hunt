@@ -30,9 +30,11 @@ public class DataManager {
     protected static float bottomTextScale = 1;
     protected static Texture iconTexture = null;
 
-    protected static Color chainColor = new Color(255, 0, 0, .25f);
-    protected static Color tileTextColor = new Color(255, 255, 255, 1f);
+    protected static Color chainColor = new Color(1, 0, 0, .25f);
+    protected static Color tileTextColor = new Color(1, 1, 1, 1f);
     protected static boolean tileTextOutline = true;
+    protected static Color menuColor = new Color(1, 1, 1, .25f);
+    protected static String menuButtonColor = "Blue";
 
     // ========== Font ==========
     protected static String fontName;
@@ -40,6 +42,10 @@ public class DataManager {
     // ========== User Info ==========
     protected static String userName = null;
     protected static int rank = 1000;
+
+    protected static boolean vibration = false;
+    protected static boolean sound = false;
+    protected static boolean music = false;
 
     // ========== Asset Loading ==========
 
@@ -54,9 +60,23 @@ public class DataManager {
     private static void readValues(){
         Scanner scan = new Scanner(Source.getAsset(THEME_PATH + ThemeManager.currentTheme + DATA_PATH).readString());
         updateFontName(scan.nextLine());
-        updateScalers(scan.nextLine(), scan.nextLine(), scan.nextLine());
+        updateScalers(scan.nextLine());
         updateTraceColor(scan.nextLine());
         updateTileLetterColor(scan.nextLine());
+        updateMenuColor(scan.nextLine());
+        updateMenuButtonColor(scan.nextLine());
+        scan.close();
+    }
+
+    private static void updateMenuButtonColor(String line){
+        Scanner scan = new Scanner(line);
+        menuButtonColor = scan.next();
+        scan.close();
+    }
+
+    private static void updateMenuColor(String line){
+        Scanner scan = new Scanner(line);
+        menuColor = new Color(scan.nextFloat() / 255f, scan.nextFloat() / 255f, scan.nextFloat() / 255f, .75f);
         scan.close();
     }
 
@@ -72,12 +92,11 @@ public class DataManager {
         scan.close();
     }
 
-    private static void updateScalers(String a, String b, String c){
-        Scanner scan = new Scanner(Source.getAsset(THEME_PATH + ThemeManager.currentTheme + DATA_PATH).readString());
-        scan.nextLine();
-        boardScale = Float.parseFloat(a);
-        tileScale = Float.parseFloat(b);
-        bottomTextScale = Float.parseFloat(c);
+    private static void updateScalers(String line){
+        Scanner scan = new Scanner(line);
+        boardScale = scan.nextFloat();
+        tileScale = scan.nextFloat();
+        bottomTextScale = scan.nextFloat();
         scan.close();
     }
 
@@ -116,8 +135,10 @@ public class DataManager {
         bottomTextTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
     }
 
-    private static void updateFontName(String a){
-        DataManager.fontName = a;
+    private static void updateFontName(String line){
+        Scanner scan = new Scanner(line);
+        DataManager.fontName = scan.next();
+        scan.close();
     }
 
     public static void setIcon(String name){
