@@ -4,12 +4,10 @@ import java.util.*;
 
 /**
  * Research-backed board generator using hill climbing and simulated annealing.
- *
  * Based on academic research that proved hill climbing can find globally optimal
  * Boggle boards. Research shows boards rich in endings like -ING, -ER, -ED, -S
  * score highest. Key insight: Boggle score space is "smooth" - small changes to
  * high-scoring boards tend to produce other high-scoring boards.
- *
  * References:
  * - "After 20 Years, the Globally Optimal Boggle Board" (Dan Vanderkam, 2025)
  * - "A Computational Proof of the Highest-Scoring Boggle Board" (arXiv 2507.02117)
@@ -44,7 +42,6 @@ public class ImprovedBoardGenerator {
     /**
      * Generates a board using hill climbing - proven to find globally optimal boards.
      * This is the RECOMMENDED method based on research.
-     *
      * Algorithm:
      * 1. Start with a random or seeded board
      * 2. Make small changes (swap/change 1-2 letters)

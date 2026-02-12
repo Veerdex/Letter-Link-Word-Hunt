@@ -5,7 +5,10 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.grantkoupal.letterlink.quantum.core.Agent;import com.grantkoupal.letterlink.quantum.core.Page;import com.grantkoupal.letterlink.quantum.core.TimeFrame;import com.grantkoupal.letterlink.quantum.core.Timer;import com.grantkoupal.letterlink.quantum.paint.Squircle;
+import com.grantkoupal.letterlink.quantum.core.Agent;
+import com.grantkoupal.letterlink.quantum.core.TimeFrame;
+import com.grantkoupal.letterlink.quantum.core.Timer;
+import com.grantkoupal.letterlink.quantum.paint.Squircle;
 
 /**
  * Displays the player's current score with a smooth counting animation.
@@ -13,126 +16,119 @@ import com.grantkoupal.letterlink.quantum.core.Agent;import com.grantkoupal.lett
  */
 public class PointsDisplay extends Agent {
 
-    // ========== Constants ==========
+    // ===== Constants =====
     private static final float UPDATE_INTERVAL = 0.01f;
+
     private static final float ANIMATION_SPEED_FACTOR = 50f;
     private static final float ANIMATION_ACCELERATION = 5f;
+
     private static final float MAX_FONT_SCALE = 1.1f;
     private static final float FONT_SCALE_DIVISOR = 10f;
 
-    // ========== Graphics ==========
-    private BitmapFont font;
-    private GlyphLayout layout;
-    private final int fontSize = 128;
+    // ===== Font / Text =====
+    private static final int FONT_SIZE = 128;
 
-    // ========== Data ==========
-    private Board board;
-    private float displayPoints = 0;  // Animated display value
+    private final BitmapFont font;
+    private final GlyphLayout layout = new GlyphLayout();
 
-    // ========== Layout ==========
-    private float displayX = 0;
-    private float displayY = 0;
-    private float scale = 1;
+    // ===== Data =====
+    private float displayPoints = 0f; // animated display value
 
-    // ========== Constructor ==========
+    // ===== Layout =====
+    private float displayX = 0f;
+    private float displayY = 0f;
+    private float scale = 1f;
 
-    /**
-     * Creates a points display that animates score changes.
-     * @param board The game board to track points from
-     * @param page The page to add the animation timer to
-     */
-    public PointsDisplay(Board board, Page page) {
-        this.board = board;
-        this.layout = new GlyphLayout();
-
-        initializeFont();
-        setupAnimationTimer(page);
+    public PointsDisplay() {
+        font = createFont();
     }
 
-    // ========== Initialization ==========
+    // ===== Lifecycle =====
 
-    /**
-     * Initializes the font with black color for score display.
-     */
-    private void initializeFont() {
-        font = Source.generateFont(com.grantkoupal.letterlink.DataManager.fontName, fontSize);
-        font.setColor(Color.BLACK);
+    @Override
+    public void frame() {
+        getPage().addTimer(createAnimationTimer());
     }
 
-    /**
-     * Sets up a timer that smoothly animates the displayed points value.
-     * Points count up gradually to match the actual score.
-     */
-    private void setupAnimationTimer(Page page) {
-        Timer animationTimer = new Timer(UPDATE_INTERVAL, Timer.INDEFINITE, new TimeFrame() {
+    @Override
+    public void draw(ShapeRenderer sr, SpriteBatch sb) {
+        updateLayout();
+        drawBackground(sr);
+        drawPoints(sb);
+    }
+
+    @Override
+    public void dispose() {
+        // No resources to dispose (font managed elsewhere in this project)
+    }
+
+    // ===== Setup =====
+
+    private BitmapFont createFont() {
+        BitmapFont f = Source.generateFont(com.grantkoupal.letterlink.DataManager.fontName, FONT_SIZE);
+        f.setColor(Color.BLACK);
+        return f;
+    }
+
+    private Timer createAnimationTimer() {
+        return new Timer(UPDATE_INTERVAL, Timer.INDEFINITE, new TimeFrame() {
             @Override
             public void run(long iteration) {
                 animatePointsTowardTarget();
             }
         });
-
-        page.addTimer(animationTimer);
     }
 
-    /**
-     * Smoothly increments displayed points toward the actual board points.
-     * Uses an accelerating animation for a natural counting effect.
-     */
+    // ===== Animation =====
+
     private void animatePointsTowardTarget() {
-        int targetPoints = board.getTotalPoints();
+        int targetPoints = Board.getTotalPoints();
+        if (targetPoints <= displayPoints) return;
 
-        if (targetPoints > displayPoints) {
-            float difference = targetPoints - displayPoints;
-            float increment = (difference + ANIMATION_ACCELERATION) / ANIMATION_SPEED_FACTOR;
+        float difference = targetPoints - displayPoints;
+        float increment = (difference + ANIMATION_ACCELERATION) / ANIMATION_SPEED_FACTOR;
 
-            displayPoints += increment;
-            displayPoints = Math.min(targetPoints, displayPoints);
-        }
+        displayPoints += increment;
+        displayPoints = Math.min(targetPoints, displayPoints);
     }
 
-    // ========== Drawing ==========
+    // ===== Layout / Draw helpers =====
 
-    @Override
-    public void draw(ShapeRenderer sr, SpriteBatch sb) {
-        calculateLayout();
-        drawBackground(sr);
-        drawPoints(sb);
-    }
-
-    /**
-     * Calculates screen-relative layout positions and scales.
-     */
-    private void calculateLayout() {
+    private void updateLayout() {
+        // Screen scale
         float yScale = Source.getScreenHeight() / 3000f;
         float xScale = Source.getScreenWidth() / 1500f;
-        scale = (float) Math.min(xScale, yScale);
+        scale = Math.min(xScale, yScale);
 
+        // Position
         displayX = Source.getScreenWidth() / 2f;
-        displayY = Source.getScreenHeight() / 2f + scale * 1050;
+        displayY = Source.getScreenHeight() / 2f + scale * 1050f;
 
-        // Scale font based on number of digits to keep it readable
+        // Text + font scale (shrink as digits grow)
         String pointsText = String.valueOf((int) displayPoints);
-        float fontScale = scale / (pointsText.length() + 1) * FONT_SCALE_DIVISOR;
-        font.getData().setScale(Math.min(fontScale * (256f / fontSize), MAX_FONT_SCALE * scale * (256f / fontSize)));
 
+        float base = (256f / FONT_SIZE);
+        float fontScale = scale / (pointsText.length() + 1) * FONT_SCALE_DIVISOR;
+
+        float scaled = fontScale * base;
+        float maxScaled = MAX_FONT_SCALE * scale * base;
+
+        font.getData().setScale(Math.min(scaled, maxScaled));
         layout.setText(font, pointsText);
     }
 
-    /**
-     * Draws the rounded rectangle background with outline.
-     */
     private void drawBackground(ShapeRenderer sr) {
         sr.begin(ShapeRenderer.ShapeType.Filled);
 
-        float boxWidth = layout.width + 100 * scale;
-        float boxHeight = 300 * scale;
-        float cornerRadius = 75 * scale;
-        float outlineThickness = 20 * scale;
+        float boxWidth = layout.width + 100f * scale;
+        float boxHeight = 300f * scale;
+        float cornerRadius = 75f * scale;
+        float outlineThickness = 20f * scale;
 
         Squircle.drawSquircleWithOutline(
             sr,
-            Color.WHITE,           // Fill color
-            Color.BLACK,           // Outline color
+            Color.WHITE,   // fill
+            Color.BLACK,   // outline
             outlineThickness,
             displayX, displayY,
             boxWidth, boxHeight,
@@ -142,9 +138,6 @@ public class PointsDisplay extends Agent {
         sr.end();
     }
 
-    /**
-     * Draws the points number centered in the box.
-     */
     private void drawPoints(SpriteBatch sb) {
         sb.begin();
 
@@ -154,15 +147,8 @@ public class PointsDisplay extends Agent {
 
         font.setColor(Color.BLACK);
         font.draw(sb, pointsText, textX, textY);
-        font.setColor(Color.WHITE);  // Reset color for other uses
+        font.setColor(Color.WHITE); // reset (kept from your original)
 
         sb.end();
-    }
-
-    // ========== Cleanup ==========
-
-    @Override
-    public void dispose() {
-        // No resources to dispose
     }
 }

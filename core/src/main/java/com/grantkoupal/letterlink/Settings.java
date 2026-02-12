@@ -5,30 +5,63 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.GlyphLayout;import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.grantkoupal.letterlink.quantum.core.Agent;
 import com.grantkoupal.letterlink.quantum.core.Graphic;
 
 public class Settings extends Agent {
 
-    private final BitmapFont font;
-    private final GlyphLayout layout;
+    // ===== Constants =====
+    private static final int FONT_SIZE = 64;
+
+    private static final float LABEL_SCALE = 1.5f;
+
+    private static final float LABEL_X_OFFSET = -450f;
+    private static final float SWITCH_X_OFFSET = 300f;
+
+    private static final float ROW_SPACING = 200f;
+    private static final float MUSIC_Y_OFFSET = 200f;
+    private static final float SOUND_Y_OFFSET = 0f;
+    private static final float VIBRATION_Y_OFFSET = -200f;
+
+    private static final float BG_TARGET_HEIGHT = 2500f;
+    private static final float SWITCH_TARGET_HEIGHT = 100f;
+    private static final float X_TARGET_HEIGHT = 150f;
+
+    private static final float SWITCH_CLICK_HALF_WIDTH = 110f;
+    private static final float SWITCH_CLICK_HALF_HEIGHT = 50f;
+
+    private static final float X_X_OFFSET = 400f;
+    private static final float X_Y_OFFSET = 975f;
+    private static final float X_CLICK_RADIUS = 100f;
+
+    // ===== Assets / Graphics =====
     private final Texture onSwitchTexture;
     private final Texture offSwitchTexture;
     private final Texture backgroundTexture;
     private final Texture xTexture;
+
     private final Graphic onSwitch;
     private final Graphic offSwitch;
     private final Graphic background;
     private final Graphic X;
+
+    // ===== Text =====
+    private final BitmapFont font;
+    private final GlyphLayout layout;
+
+    // ===== Input =====
     private boolean mouseDown = false;
 
-    public Settings(){
+    public Settings() {
         onSwitchTexture = new Texture(Source.getAsset("Misc/On Switch.png"));
         onSwitchTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+
         offSwitchTexture = new Texture(Source.getAsset("Misc/Off Switch.png"));
         offSwitchTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+
         onSwitch = new Graphic(onSwitchTexture);
         offSwitch = new Graphic(offSwitchTexture);
 
@@ -38,24 +71,99 @@ public class Settings extends Agent {
 
         xTexture = new Texture(Source.getAsset("Misc/Red X.png"));
         xTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-
         X = new Graphic(xTexture);
 
-        font = Source.generateFont(DataManager.fontName, 64);
+        font = Source.generateFont(DataManager.fontName, FONT_SIZE);
         layout = new GlyphLayout();
     }
 
     @Override
     public void draw(ShapeRenderer sr, SpriteBatch sb) {
-        if(!Board.settingsOpen) return;
-        float yScale = Source.getScreenHeight() / 3500f;
-        float xScale = Source.getScreenWidth() / 1500f;
-        float scale = Math.min(xScale, yScale);
+        if (!Board.settingsOpen) return;
+
+        float scale = computeScale();
+
+        boolean click = detectClick();
+
+        float centerX = Source.getScreenWidth() / 2f;
+        float centerY = Source.getScreenHeight() / 2f;
+
+        float alignX = centerX + SWITCH_X_OFFSET * scale;
+
+        float musicY = centerY + MUSIC_Y_OFFSET * scale;
+        float soundY = centerY + SOUND_Y_OFFSET * scale;
+        float vibrationY = centerY + VIBRATION_Y_OFFSET * scale;
+
+        float xCenterX = centerX + X_X_OFFSET * scale;
+        float xCenterY = centerY + X_Y_OFFSET * scale;
+
         sb.begin();
 
+        drawBackground(sb, centerX, centerY, scale);
+        drawLabels(sb, centerX, scale, musicY, soundY, vibrationY);
+        drawCloseX(sb, scale, xCenterX, xCenterY);
+
+        drawToggle(sb, DataManager.music, alignX, musicY, scale);
+        drawToggle(sb, DataManager.sound, alignX, soundY, scale);
+        drawToggle(sb, DataManager.vibration, alignX, vibrationY, scale);
+
+        if (click) {
+            handleClick(
+                Source.getScreenMouseX(),
+                Source.getScreenMouseY(),
+                alignX, musicY, soundY, vibrationY,
+                xCenterX, xCenterY,
+                scale
+            );
+        }
+
+        sb.end();
+    }
+
+    // ===== Draw helpers =====
+
+    private void drawBackground(SpriteBatch sb, float centerX, float centerY, float scale) {
+        background.setCenter(centerX, centerY);
+        background.setScale(BG_TARGET_HEIGHT * scale / backgroundTexture.getHeight());
+        background.draw(sb);
+    }
+
+    private void drawLabels(SpriteBatch sb, float centerX, float scale, float musicY, float soundY, float vibrationY) {
+        font.setColor(Color.WHITE);
+        font.getData().setScale(scale * LABEL_SCALE);
+
+        drawLabel(sb, "Music", centerX + LABEL_X_OFFSET * scale, musicY);
+        drawLabel(sb, "Sound", centerX + LABEL_X_OFFSET * scale, soundY);
+        drawLabel(sb, "Vibration", centerX + LABEL_X_OFFSET * scale, vibrationY);
+    }
+
+    private void drawLabel(SpriteBatch sb, String text, float x, float y) {
+        layout.setText(font, text);
+        font.draw(sb, text, x, y + layout.height / 2f);
+    }
+
+    private void drawCloseX(SpriteBatch sb, float scale, float xCenterX, float xCenterY) {
+        X.setScale(scale * X_TARGET_HEIGHT / xTexture.getHeight());
+        X.setCenter(xCenterX, xCenterY);
+        X.draw(sb);
+    }
+
+    private void drawToggle(SpriteBatch sb, boolean enabled, float x, float y, float scale) {
+        Graphic g = enabled ? onSwitch : offSwitch;
+        Texture t = enabled ? onSwitchTexture : offSwitchTexture;
+
+        g.setCenter(x, y);
+        g.setScale(SWITCH_TARGET_HEIGHT * scale / t.getHeight());
+        g.draw(sb);
+    }
+
+    // ===== Input helpers =====
+
+    private boolean detectClick() {
         boolean click = false;
-        if(Gdx.input.isButtonPressed(Input.Buttons.LEFT)){
-            if(!mouseDown) {
+
+        if (Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
+            if (!mouseDown) {
                 mouseDown = true;
                 click = true;
             }
@@ -63,83 +171,45 @@ public class Settings extends Agent {
             mouseDown = false;
         }
 
-        float centerX = Source.getScreenWidth() / 2f;
-        float centerY = Source.getScreenHeight() / 2f;
+        return click;
+    }
 
-        background.setCenter(centerX, centerY);
-        background.setScale(2500 * scale / backgroundTexture.getHeight());
-        background.draw(sb);
-
-        float alignX = centerX + 300 * scale;
-        float musicY = centerY + 200 * scale;
-        float soundY = centerY;
-        float vibrationY = centerY - 200 * scale;
-
-        font.setColor(Color.WHITE);
-        font.getData().setScale(scale * 1.5f);
-        layout.setText(font, "Music");
-        font.draw(sb, "Music", centerX - 450 * scale, musicY + layout.height / 2f);
-        layout.setText(font, "Sound");
-        font.draw(sb, "Sound", centerX - 450 * scale, soundY + layout.height / 2f);
-        layout.setText(font, "Vibration");
-        font.draw(sb, "Vibration", centerX - 450 * scale, vibrationY + layout.height / 2f);
-
-        float xCenterX = 400 * scale + centerX;
-        float xCenterY = 975 * scale + centerY;
-
-        X.setScale(scale * 150 / xTexture.getHeight());
-        X.setCenter(xCenterX, xCenterY);
-        X.draw(sb);
-
-        if(DataManager.music){
-            onSwitch.setCenter(alignX, musicY);
-            onSwitch.setScale(100 * scale / onSwitchTexture.getHeight());
-            onSwitch.draw(sb);
-        } else {
-            offSwitch.setCenter(alignX, musicY);
-            offSwitch.setScale(100 * scale / offSwitchTexture.getHeight());
-            offSwitch.draw(sb);
-        }
-
-        if(DataManager.sound){
-            onSwitch.setCenter(alignX, soundY);
-            onSwitch.setScale(100 * scale / onSwitchTexture.getHeight());
-            onSwitch.draw(sb);
-        } else {
-            offSwitch.setCenter(alignX, soundY);
-            offSwitch.setScale(100 * scale / offSwitchTexture.getHeight());
-            offSwitch.draw(sb);
-        }
-
-        if(DataManager.vibration){
-            onSwitch.setCenter(alignX, vibrationY);
-            onSwitch.setScale(100 * scale / onSwitchTexture.getHeight());
-            onSwitch.draw(sb);
-        } else {
-            offSwitch.setCenter(alignX, vibrationY);
-            offSwitch.setScale(100 * scale / offSwitchTexture.getHeight());
-            offSwitch.draw(sb);
-        }
-
-        float mouseX = Source.getScreenMouseX();
-        float mouseY = Source.getScreenMouseY();
-
-        if(click){
-            if(Math.abs(mouseX - alignX) < 110 * scale) {
-                if (Math.abs(mouseY - musicY) < 50 * scale) {
-                    DataManager.music = !DataManager.music;
-                } else if (Math.abs(mouseY - soundY) < 50 * scale) {
-                    DataManager.sound = !DataManager.sound;
-                } else if (Math.abs(mouseY - vibrationY) < 50 * scale) {
-                    DataManager.vibration = !DataManager.vibration;
-                }
-            }
-            if(Math.sqrt(Math.pow(mouseX - xCenterX, 2) + Math.pow(mouseY - xCenterY, 2)) < 100 * scale){
-                Board.settingsOpen = false;
+    private void handleClick(
+        float mouseX,
+        float mouseY,
+        float alignX,
+        float musicY,
+        float soundY,
+        float vibrationY,
+        float xCenterX,
+        float xCenterY,
+        float scale
+    ) {
+        // Toggle switches
+        if (Math.abs(mouseX - alignX) < SWITCH_CLICK_HALF_WIDTH * scale) {
+            if (Math.abs(mouseY - musicY) < SWITCH_CLICK_HALF_HEIGHT * scale) {
+                DataManager.music = !DataManager.music;
+            } else if (Math.abs(mouseY - soundY) < SWITCH_CLICK_HALF_HEIGHT * scale) {
+                DataManager.sound = !DataManager.sound;
+            } else if (Math.abs(mouseY - vibrationY) < SWITCH_CLICK_HALF_HEIGHT * scale) {
+                DataManager.vibration = !DataManager.vibration;
             }
         }
 
-        sb.end();
+        // Close button
+        if (distance(mouseX, mouseY, xCenterX, xCenterY) < X_CLICK_RADIUS * scale) {
+            Board.settingsOpen = false;
+        }
+    }
+
+    private float computeScale() {
+        float yScale = Source.getScreenHeight() / 3500f;
+        float xScale = Source.getScreenWidth() / 1500f;
+        return Math.min(xScale, yScale);
+    }
+
+    private float distance(float x1, float y1, float x2, float y2) {
+        return (float) Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
     }
 
     @Override

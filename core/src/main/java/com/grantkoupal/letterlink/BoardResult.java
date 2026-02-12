@@ -11,4 +11,5 @@ public class BoardResult {
     public int totalWords;
     public float wordsPerSecond;
     public float pointsPerSecond;
+    public int SRankScore;
 }

@@ -504,43 +504,4 @@ public class WordDifficultyRanker {
             return String.format("%6.2f | %-30s", score, word);
         }
     }
-
-    // Example usage and testing
-    public static void main(String[] args) {
-        System.out.println("Word Difficulty Ranker - Full 0-100 Scale");
-        System.out.println("Package: com.grantkoupal.letterlink");
-        System.out.println("=" + "=".repeat(79));
-        System.out.println();
-
-        // Method 1: Using static method (quick and simple)
-        System.out.println("METHOD 1: Static method wordDifficulty()");
-        System.out.println("-".repeat(80));
-        String[] quickTest = {"are", "cat", "puzzle", "question", "claimers"};
-        for (String word : quickTest) {
-            double score = WordDifficultyRanker.wordDifficulty(word);  // Static call
-            System.out.printf("  WordDifficultyRanker.wordDifficulty(\"%s\") = %.2f%n", word, score);
-        }
-        System.out.println();
-
-        // Method 2: Using instance (for multiple words, more efficient)
-        System.out.println("METHOD 2: Instance method getDifficulty()");
-        System.out.println("-".repeat(80));
-        WordDifficultyRanker ranker = new WordDifficultyRanker();
-
-        List<String> testWords = Arrays.asList(
-            "the", "and", "cat", "quick", "puzzle", "rhythm", "jazz",
-            "question", "children", "claimers"
-        );
-
-        for (String word : testWords) {
-            double difficulty = ranker.getDifficulty(word);
-            String description = ranker.getDifficultyDescription(difficulty);
-            System.out.printf("  %-15s | %6.2f | %s%n", word, difficulty, description);
-        }
-
-        System.out.println();
-        System.out.println("=" + "=".repeat(79));
-        System.out.println("TIP: Use static method for single lookups,");
-        System.out.println("     use instance for multiple words to avoid recreation overhead.");
-    }
 }

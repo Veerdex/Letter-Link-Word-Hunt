@@ -7,29 +7,41 @@ import com.grantkoupal.letterlink.quantum.core.Timer;
 
 public class LoadingBoardPage extends Page {
 
+    // ===== Constants =====
+    private static final float POLL_INTERVAL_SECONDS = 0.25f;
+
+    // ===== UI =====
     private LoadingAnimation spinner;
+
+    // ===== Loading state =====
     private volatile boolean loadingComplete = false;
     private Thread loadingThread;
 
     @Override
-    public void initialize(){
-        // Create spinner at center of screen
+    public void initialize() {
+        createSpinner();
+        startLoadingThread();
+        startCompletionPollTimer();
+    }
+
+    private void createSpinner() {
         float centerX = Gdx.graphics.getWidth() / 2f;
         float centerY = Gdx.graphics.getHeight() / 2f;
+
         spinner = new LoadingAnimation(centerX, centerY, this);
         add(spinner);
+    }
 
-        // Start loading board in background thread
+    private void startLoadingThread() {
         loadingThread = new Thread() {
             @Override
             public void run() {
                 try {
                     // This is where the heavy loading happens
-                    ImprovedBoardGenerator.generateBoard(4, 5, 5);
+                    ImprovedBoardGenerator.generateBoard(4, 4, 4);
 
                     // Mark as complete
                     loadingComplete = true;
-
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -38,16 +50,16 @@ public class LoadingBoardPage extends Page {
 
         loadingThread.setDaemon(true);
         loadingThread.start();
+    }
 
-        addTimer(new Timer(.25f, Timer.INDEFINITE, new TimeFrame(){
+    private void startCompletionPollTimer() {
+        addTimer(new Timer(POLL_INTERVAL_SECONDS, Timer.INDEFINITE, new TimeFrame() {
             @Override
             public void run(long iteration) {
-                if(loadingComplete){
-                    stop();
-                    PracticePage practicePage = new PracticePage();
+                if (!loadingComplete) return;
 
-                    Source.loadNewPage(practicePage);
-                }
+                stop();
+                Source.loadNewPage(new PracticePage());
             }
         }));
     }

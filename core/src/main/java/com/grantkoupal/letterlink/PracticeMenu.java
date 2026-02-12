@@ -12,189 +12,209 @@ import java.util.List;
 
 public class PracticeMenu extends Agent {
 
+    // ===== Constants =====
+    private static final float HOVER_MAX_SCALE = 1.2f;
+
+    private static final float BUTTON_HALF_WIDTH = 433f;
+    private static final float BUTTON_HALF_HEIGHT = 150f;
+
+    private static final float BUTTON_CENTER_OFFSET_Y = 400f;
+    private static final float BUTTON_TARGET_HEIGHT = 300f;
+
+    // ===== Assets =====
     private Texture resumeTexture;
     private Texture settingsTexture;
     private Texture finishTexture;
+
+    // ===== Graphics =====
     private final Graphic RESUME;
     private final Graphic SETTINGS;
     private final Graphic FINISH;
+
+    // ===== State =====
     private float scale;
     private boolean mouseDown = false;
-    private float resumeScale = 1;
-    private float settingsScale = 1;
-    private float finishScale = 1;
-    private final Board board;
 
-    public PracticeMenu(Page p, Board board){
+    private float resumeScale = 1f;
+    private float settingsScale = 1f;
+    private float finishScale = 1f;
+
+    public PracticeMenu() {
         instantiateTextures(DataManager.menuButtonColor);
-
-        this.board = board;
 
         RESUME = new Graphic(resumeTexture);
         SETTINGS = new Graphic(settingsTexture);
         FINISH = new Graphic(finishTexture);
-
-        addAnimation(p);
     }
 
-    private void addAnimation(Page p){
-        p.addAnimation(new Animation(System.nanoTime(), Animation.INDEFINITE, new Action(){
+    @Override
+    public void frame() {
+        getPage().addAnimation(new Animation(System.nanoTime(), Animation.INDEFINITE, new Action() {
             @Override
             public void run(float delta) {
-
-                if(!Board.menuOpen || Board.settingsOpen) return;
+                if (!Board.menuOpen || Board.settingsOpen) return;
 
                 float centerX = Source.getScreenWidth() / 2f;
                 float centerY = Source.getScreenHeight() / 2f;
+
                 float mouseX = Source.getScreenMouseX();
                 float mouseY = Source.getScreenMouseY();
 
-                boolean click = false;
-                if(Gdx.input.isButtonPressed(Input.Buttons.LEFT)){
-                    if(!mouseDown) {
-                        mouseDown = true;
-                        click = true;
-                    }
-                } else {
-                    mouseDown = false;
-                }
+                boolean click = detectClick();
 
                 // RESUME
-
-                if(Math.abs(mouseX - centerX) < 433 * scale && Math.abs(mouseY - (centerY + 400 * scale)) < 150 * scale){
-                    if(click){
-                        executeResume();
-                    }
-                    if(resumeScale < 1.2) {
-                        resumeScale += delta;
-                    } else {
-                        resumeScale = 1.2f;
-                    }
+                float resumeY = centerY + BUTTON_CENTER_OFFSET_Y * scale;
+                if (isHovering(mouseX, mouseY, centerX, resumeY)) {
+                    if (click) executeResume();
+                    resumeScale = approach(resumeScale, HOVER_MAX_SCALE, delta);
                 } else {
-                    if(resumeScale > 1) {
-                        resumeScale -= delta;
-                    } else {
-                        resumeScale = 1;
-                    }
+                    resumeScale = approach(resumeScale, 1f, delta);
                 }
-                RESUME.setScale(300 * scale / resumeTexture.getHeight() * resumeScale);
+                RESUME.setScale(BUTTON_TARGET_HEIGHT * scale / resumeTexture.getHeight() * resumeScale);
 
                 // SETTINGS
-
-                if(Math.abs(mouseX - centerX) < 433 * scale && Math.abs(mouseY - centerY) < 150 * scale){
-                    if(click){
-                        executeSettings();
-                    }
-                    if(settingsScale < 1.2) {
-                        settingsScale += delta;
-                    } else {
-                        settingsScale = 1.2f;
-                    }
+                float settingsY = centerY;
+                if (isHovering(mouseX, mouseY, centerX, settingsY)) {
+                    if (click) executeSettings();
+                    settingsScale = approach(settingsScale, HOVER_MAX_SCALE, delta);
                 } else {
-                    if(settingsScale > 1) {
-                        settingsScale -= delta;
-                    } else {
-                        settingsScale = 1;
-                    }
+                    settingsScale = approach(settingsScale, 1f, delta);
                 }
-                SETTINGS.setScale(300 * scale / settingsTexture.getHeight() * settingsScale);
+                SETTINGS.setScale(BUTTON_TARGET_HEIGHT * scale / settingsTexture.getHeight() * settingsScale);
 
                 // FINISH
-
-                if(Math.abs(mouseX - centerX) < 433 * scale && Math.abs(mouseY - (centerY - 400 * scale)) < 150 * scale){
-                    if(click){
-                        executeFinish(p);
-                    }
-                    if(finishScale < 1.2) {
-                        finishScale += delta;
-                    } else {
-                        finishScale = 1.2f;
-                    }
+                float finishY = centerY - BUTTON_CENTER_OFFSET_Y * scale;
+                if (isHovering(mouseX, mouseY, centerX, finishY)) {
+                    if (click) executeFinish();
+                    finishScale = approach(finishScale, HOVER_MAX_SCALE, delta);
                 } else {
-                    if(finishScale > 1) {
-                        finishScale -= delta;
-                    } else {
-                        finishScale = 1;
-                    }
+                    finishScale = approach(finishScale, 1f, delta);
                 }
-                FINISH.setScale(300 * scale / finishTexture.getHeight() * finishScale);
-
-
+                FINISH.setScale(BUTTON_TARGET_HEIGHT * scale / finishTexture.getHeight() * finishScale);
             }
         }));
     }
 
-    private void executeResume(){
+    // ===== Button Actions =====
+
+    private void executeResume() {
         Board.menuOpen = false;
-        resumeScale = 1;
-        settingsScale = 1;
-        finishScale = 1;
-        mouseDown = false;
+        resetState();
     }
 
-    private void executeSettings(){
+    private void executeSettings() {
         Board.settingsOpen = true;
-        resumeScale = 1;
-        settingsScale = 1;
-        finishScale = 1;
-        mouseDown = false;
+        resetState();
     }
 
-    private void executeFinish(Page p){
+    private void executeFinish() {
         BoardResult results = new BoardResult();
-        results.score = board.getTotalPoints();
-        results.hintsUsed = board.getHintsUsed();
-        results.boardValue = board.getBoardValue();
-        results.longestWord = board.getLongestWord().toUpperCase();
-        results.totalWords = board.getListOfWordsFound().size();
-        results.userRank = board.getCurrentRank();
-        results.timeSeconds = board.getGameDuration() / 1000;
-        List<String> wordsFound = board.getListOfWordsFound();
+        results.score = Board.getTotalPoints();
+        results.hintsUsed = Board.getHintsUsed();
+        results.boardValue = Board.getBoardValue();
+        results.longestWord = Board.getLongestWord().toUpperCase();
+        results.totalWords = Board.getListOfWordsFound().size();
+        results.userRank = Board.getCurrentRank();
+        results.timeSeconds = Board.getGameDuration() / 1000;
+        results.SRankScore = Board.SRankScore;
+
+        List<String> wordsFound = Board.getListOfWordsFound();
         int totalLetters = 0;
-        for(int i = 0; i < wordsFound.size(); i++){
-            totalLetters += wordsFound.get(i).length();
+        for (String s : wordsFound) {
+            totalLetters += s.length();
         }
-        if(totalLetters == 0){
+
+        if (totalLetters == 0) {
             results.averageWordLength = 0;
         } else {
             results.averageWordLength = totalLetters / (float) results.totalWords;
         }
-        results.wordsPerSecond = results.totalWords / (float)results.timeSeconds;
-        results.pointsPerSecond = results.score / (float)results.timeSeconds;
-        FinishPage fp = new FinishPage(results);
-        Source.loadNewPage(fp);
+
+        results.wordsPerSecond = results.totalWords / (float) results.timeSeconds;
+        results.pointsPerSecond = results.score / (float) results.timeSeconds;
+
+        Source.loadNewPage(new FinishPage(results));
     }
 
-    private void instantiateTextures(String color){
+    private void resetState() {
+        resumeScale = 1f;
+        settingsScale = 1f;
+        finishScale = 1f;
+        mouseDown = false;
+    }
+
+    // ===== Input / Hover helpers =====
+
+    private boolean detectClick() {
+        boolean click = false;
+
+        if (Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
+            if (!mouseDown) {
+                mouseDown = true;
+                click = true;
+            }
+        } else {
+            mouseDown = false;
+        }
+
+        return click;
+    }
+
+    private boolean isHovering(float mouseX, float mouseY, float centerX, float centerY) {
+        return Math.abs(mouseX - centerX) < BUTTON_HALF_WIDTH * scale
+            && Math.abs(mouseY - centerY) < BUTTON_HALF_HEIGHT * scale;
+    }
+
+    private float approach(float current, float target, float delta) {
+        if (current < target) {
+            current += delta;
+            if (current > target) current = target;
+            return current;
+        }
+        if (current > target) {
+            current -= delta;
+            if (current < target) current = target;
+        }
+        return current;
+    }
+
+    // ===== Assets =====
+
+    private void instantiateTextures(String color) {
         resumeTexture = new Texture(Source.getAsset("Menu/" + color + " Resume.png"));
         resumeTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+
         settingsTexture = new Texture(Source.getAsset("Menu/" + color + " Settings.png"));
         settingsTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+
         finishTexture = new Texture(Source.getAsset("Menu/" + color + " Finish.png"));
         finishTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
     }
 
+    // ===== Draw =====
+
     @Override
     public void draw(ShapeRenderer sr, SpriteBatch sb) {
-        if(!Board.menuOpen) return;
+        if (!Board.menuOpen) return;
 
-        float yScale = Source.getScreenHeight() / 3000f;
-        float xScale = Source.getScreenWidth() / 1500f;
-        scale = Math.min(xScale, yScale);
+        updateScale();
 
+        // Background overlay
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+
         sr.begin(ShapeRenderer.ShapeType.Filled);
         sr.setColor(DataManager.menuColor);
         sr.rect(0, 0, Source.getScreenWidth(), Source.getScreenHeight());
         sr.end();
 
+        // Button centers
         float centerX = Source.getScreenWidth() / 2f;
         float centerY = Source.getScreenHeight() / 2f;
 
-        RESUME.setCenter(centerX, centerY + 400 * scale);
+        RESUME.setCenter(centerX, centerY + BUTTON_CENTER_OFFSET_Y * scale);
         SETTINGS.setCenter(centerX, centerY);
-        FINISH.setCenter(centerX, centerY - 400 * scale);
+        FINISH.setCenter(centerX, centerY - BUTTON_CENTER_OFFSET_Y * scale);
 
         sb.begin();
         RESUME.draw(sb);
@@ -202,6 +222,14 @@ public class PracticeMenu extends Agent {
         FINISH.draw(sb);
         sb.end();
     }
+
+    private void updateScale() {
+        float yScale = Source.getScreenHeight() / 3000f;
+        float xScale = Source.getScreenWidth() / 1500f;
+        scale = Math.min(xScale, yScale);
+    }
+
+    // ===== Cleanup =====
 
     @Override
     public void dispose() {

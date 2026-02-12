@@ -15,8 +15,8 @@ public class ThemeManager {
     }
 
     private static boolean isValidTheme(String theme){
-        for(int i = 0; i < themeOptions.length; i++){
-            if(themeOptions[i].equals(theme)){
+        for (String themeOption : themeOptions) {
+            if (themeOption.equals(theme)) {
                 return true;
             }
         }

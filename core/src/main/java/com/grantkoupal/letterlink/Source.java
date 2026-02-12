@@ -9,7 +9,7 @@ public class Source extends Manager {
     protected static FontProvider fontProvider;
 
     public Source(FontProvider fontProvider){
-        this.fontProvider = fontProvider;
+        Source.fontProvider = fontProvider;
     }
 
     @Override

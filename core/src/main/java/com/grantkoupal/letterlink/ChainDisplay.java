@@ -10,15 +10,30 @@ import com.grantkoupal.letterlink.quantum.paint.Squircle;
 
 /**
  * Displays the current letter chain being traced by the player.
- * Changes color based on word validity: green (valid), yellow (duplicate), red (invalid).
- * Positioned at the top-center of the screen, below the points display.
+ * Shows dynamic color feedback based on word validity:
+ * - Green: Valid new word
+ * - Yellow: Already found (duplicate)
+ * - Red: Invalid word
+ * - White: Empty chain
+ *
+ * Positioned at top-center of screen with responsive sizing.
  */
 public class ChainDisplay extends Agent {
 
-    // ========== Constants ==========
-    private static final Color RED = new Color(1, 94f / 255, 94f / 255, 1);
-    private static final Color GREEN = new Color(94f / 255, 1, 94f / 255, 1);
-    private static final Color YELLOW = new Color(1, 1, 94f / 255, 1);
+    // ========================================
+    // CONSTANTS - COLORS
+    // ========================================
+
+    private static final Color COLOR_INVALID = new Color(1, 94f / 255, 94f / 255, 1);
+    private static final Color COLOR_VALID = new Color(94f / 255, 1, 94f / 255, 1);
+    private static final Color COLOR_DUPLICATE = new Color(1, 1, 94f / 255, 1);
+    private static final Color COLOR_EMPTY = Color.WHITE;
+    private static final Color COLOR_TEXT = Color.BLACK;
+    private static final Color COLOR_OUTLINE = Color.BLACK;
+
+    // ========================================
+    // CONSTANTS - LAYOUT
+    // ========================================
 
     private static final float MAX_FONT_SCALE = 1.0f;
     private static final float FONT_SCALE_MULTIPLIER = 12f;
@@ -26,140 +41,196 @@ public class ChainDisplay extends Agent {
     private static final float BOX_HEIGHT = 150f;
     private static final float CORNER_RADIUS = 75f;
     private static final float OUTLINE_THICKNESS = 20f;
+    private static final float VERTICAL_OFFSET = 800f;
 
-    // ========== Graphics ==========
+    // Screen scale references
+    private static final float SCREEN_HEIGHT_REFERENCE = 3000f;
+    private static final float SCREEN_WIDTH_REFERENCE = 1500f;
+
+    // ========================================
+    // STATE
+    // ========================================
+
     private BitmapFont font;
-    private GlyphLayout layout;
+    private final GlyphLayout layout;
 
-    // ========== Data ==========
-    private Board board;
-
-    // ========== Layout ==========
+    // Computed layout values
     private float displayX = 0;
     private float displayY = 0;
     private float scale = 1;
 
-    // ========== Constructor ==========
+    // ========================================
+    // CONSTRUCTOR
+    // ========================================
 
     /**
      * Creates a chain display that shows the current word being traced.
-     * @param board The game board to track letter chains from
      */
-    public ChainDisplay(Board board) {
-        this.board = board;
+    public ChainDisplay() {
         this.layout = new GlyphLayout();
-
         initializeFont();
     }
 
-    // ========== Initialization ==========
+    // ========================================
+    // INITIALIZATION
+    // ========================================
 
-    /**
-     * Initializes the font with black color for chain display.
-     */
     private void initializeFont() {
-        font = Source.generateFont(com.grantkoupal.letterlink.DataManager.fontName, 128);
-        font.setColor(Color.BLACK);
+        font = Source.generateFont(DataManager.fontName, 128);
+        font.setColor(COLOR_TEXT);
     }
 
-    // ========== Drawing ==========
+    // ========================================
+    // MAIN DRAW METHOD
+    // ========================================
 
     @Override
     public void draw(ShapeRenderer sr, SpriteBatch sb) {
-        calculateLayout();
+        String chainText = Board.getStringChain();
+
+        // Early return if chain is empty - nothing to draw
+        if (chainText.isEmpty()) {
+            return;
+        }
+
+        calculateLayout(chainText);
         drawBackground(sr);
-        drawChainText(sb);
+        drawChainText(sb, chainText);
     }
+
+    // ========================================
+    // LAYOUT CALCULATION
+    // ========================================
 
     /**
      * Calculates screen-relative layout positions and scales.
+     * Adjusts font size dynamically based on chain length.
      */
-    private void calculateLayout() {
-        float yScale = Source.getScreenHeight() / 3000f;
-        float xScale = Source.getScreenWidth() / 1500f;
-        scale = (float) Math.min(xScale, yScale);
+    private void calculateLayout(String chainText) {
+        calculateScreenScale();
+        calculateDisplayPosition();
+        calculateFontScale(chainText);
+        updateTextLayout(chainText);
+    }
 
+    private void calculateScreenScale() {
+        float yScale = Source.getScreenHeight() / SCREEN_HEIGHT_REFERENCE;
+        float xScale = Source.getScreenWidth() / SCREEN_WIDTH_REFERENCE;
+        scale = Math.min(xScale, yScale);
+    }
+
+    private void calculateDisplayPosition() {
         displayX = Source.getScreenWidth() / 2f;
-        displayY = Source.getScreenHeight() / 2f + scale * 800;
-
-        // Scale font based on chain length to keep it readable
-        String chainText = board.getStringChain();
-        float fontScale = scale / (chainText.length() + 1) * FONT_SCALE_MULTIPLIER;
-        font.getData().setScale(Math.min(fontScale, scale * MAX_FONT_SCALE));
-
-        layout.setText(font, chainText.toUpperCase());
+        displayY = Source.getScreenHeight() / 2f + scale * VERTICAL_OFFSET;
     }
 
     /**
+     * Calculates font scale based on chain length to keep text readable.
+     * Longer chains get smaller text to fit in the box.
+     */
+    private void calculateFontScale(String chainText) {
+        float fontScale = scale / (chainText.length() + 1) * FONT_SCALE_MULTIPLIER;
+        float finalScale = Math.min(fontScale, scale * MAX_FONT_SCALE);
+        font.getData().setScale(finalScale);
+    }
+
+    private void updateTextLayout(String chainText) {
+        layout.setText(font, chainText.toUpperCase());
+    }
+
+    // ========================================
+    // BACKGROUND RENDERING
+    // ========================================
+
+    /**
      * Draws the rounded rectangle background with color based on word validity.
-     * Green = valid new word, Yellow = already found word, Red = invalid word.
      */
     private void drawBackground(ShapeRenderer sr) {
         sr.begin(ShapeRenderer.ShapeType.Filled);
 
         Color fillColor = determineBackgroundColor();
-        float boxWidth = layout.width + BOX_PADDING * scale;
-        float boxHeight = BOX_HEIGHT * scale;
+        float boxWidth = calculateBoxWidth();
+        float boxHeight = calculateBoxHeight();
+        float cornerRadius = CORNER_RADIUS * scale;
 
         Squircle.drawSquircleWithOutline(
             sr,
             fillColor,
-            Color.BLACK,
+            COLOR_OUTLINE,
             OUTLINE_THICKNESS * scale,
-            displayX, displayY,
-            boxWidth, boxHeight,
-            CORNER_RADIUS * scale
+            displayX,
+            displayY,
+            boxWidth,
+            boxHeight,
+            cornerRadius
         );
 
         sr.end();
     }
 
     /**
-     * Determines the background color based on the current chain state.
-     * @return Color representing word validity
+     * Determines background color based on current chain validation state.
      */
     private Color determineBackgroundColor() {
-        String chain = board.getStringChain();
+        Board.LetterState state = Board.getCurrentState();
 
-        // Empty chain = white background
-        if (chain.length() == 0) {
-            return Color.WHITE;
-        }
-
-        // Color based on word state
-        switch (board.getCurrentState()) {
+        switch (state) {
             case VALID:
-                return GREEN;
+                return COLOR_VALID;
             case COPY:
-                return YELLOW;
+                return COLOR_DUPLICATE;
             case INVALID:
-                return RED;
+                return COLOR_INVALID;
+            case UNSELECTED:
+            case HINT:
+            case HINT_START:
             default:
-                return Color.WHITE;
+                return COLOR_EMPTY;
         }
     }
 
+    private float calculateBoxWidth() {
+        return layout.width + BOX_PADDING * scale;
+    }
+
+    private float calculateBoxHeight() {
+        return BOX_HEIGHT * scale;
+    }
+
+    // ========================================
+    // TEXT RENDERING
+    // ========================================
+
     /**
-     * Draws the letter chain text centered in the box.
+     * Draws the letter chain text centered in the display box.
      */
-    private void drawChainText(SpriteBatch sb) {
+    private void drawChainText(SpriteBatch sb, String chainText) {
         sb.begin();
 
-        String chainText = board.getStringChain().toUpperCase();
-        float textX = displayX - layout.width / 2f;
-        float textY = displayY + layout.height / 2f;
+        String displayText = chainText.toUpperCase();
+        float textX = calculateTextX();
+        float textY = calculateTextY();
 
-        font.setColor(Color.BLACK);
-
-        font.draw(sb, chainText, textX, textY);
+        font.setColor(COLOR_TEXT);
+        font.draw(sb, displayText, textX, textY);
 
         sb.end();
     }
 
-    // ========== Cleanup ==========
+    private float calculateTextX() {
+        return displayX - layout.width / 2f;
+    }
+
+    private float calculateTextY() {
+        return displayY + layout.height / 2f;
+    }
+
+    // ========================================
+    // CLEANUP
+    // ========================================
 
     @Override
     public void dispose() {
-        // No resources to dispose
+        // Font is managed by Source, no disposal needed
     }
 }

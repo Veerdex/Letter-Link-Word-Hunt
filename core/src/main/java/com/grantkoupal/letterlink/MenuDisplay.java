@@ -15,167 +15,242 @@ import java.util.List;
 
 public class MenuDisplay extends Agent {
 
-    private final int fontSize = 64;
-    private final int MENU_HEIGHT = 325;
-    private float scale = 1;
+    // ===== Constants =====
+    private static final int FONT_SIZE = 64;
+    private static final int MENU_HEIGHT = 325;
+
+    // UI scale + click radius
+    private float scale = 1f;
+
+    // ===== Assets / Graphics =====
     private final Texture hintTexture;
     private final Texture menuTexture;
+
     private final Graphic icon;
     private final Graphic hint;
     private final Graphic menu;
+
+    // ===== Text =====
     private final BitmapFont font;
     private final GlyphLayout layout;
+
+    // ===== Time / Input =====
     private final long startTime;
-    private final Board board;
     private boolean mouseDown = false;
-    private Animation animateHint;
-    private float hintTimer = 0;
-    private float hintScale = 1;
 
-    public MenuDisplay(Board board, Page p){
+    // ===== Hint animation =====
+    private final Animation animateHint;
+    private float hintTimer = 0f;
+    private float hintScale = 1f;
 
-        this.board = board;
-
+    public MenuDisplay() {
+        // Textures
         hintTexture = new Texture(Source.getAsset("Misc/Light Bulb.png"));
         hintTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
         menuTexture = new Texture(Source.getAsset("Misc/Menu.png"));
         menuTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
+        // Graphics
         icon = new Graphic(com.grantkoupal.letterlink.DataManager.iconTexture);
         hint = new Graphic(hintTexture);
         menu = new Graphic(menuTexture);
 
-        font = Source.generateFont(com.grantkoupal.letterlink.DataManager.fontName, fontSize);
-
-        float yScale = Source.getScreenHeight() / 3000f;
-        float xScale = Source.getScreenWidth() / 1500f;
-        scale = Math.min(xScale, yScale);
-
-        font.getData().setScale(scale);
-
+        // Font
+        font = Source.generateFont(com.grantkoupal.letterlink.DataManager.fontName, FONT_SIZE);
+        updateScaleForFont();
         layout = new GlyphLayout(font, com.grantkoupal.letterlink.DataManager.userName);
 
+        // Timer start
         startTime = System.currentTimeMillis();
 
-        animateHint = new Animation(System.nanoTime(), Animation.INDEFINITE, new Action(){
+        // Hint pulse animation
+        animateHint = new Animation(System.nanoTime(), Animation.INDEFINITE, new Action() {
             @Override
             public void run(float delta) {
-                if(board.getHintScore() < 10) {
-                    hintScale = 1;
-                    hintTimer = 0;
-                } else {
-                    hintTimer += delta * 3;
-                    hintScale = 1 - ((float) -Math.cos(hintTimer) + 1) / 10;
+                if (Board.getHintScore() < 10) {
+                    hintScale = 1f;
+                    hintTimer = 0f;
+                    return;
                 }
+                hintTimer += delta * 3f;
+                hintScale = 1f - ((float) -Math.cos(hintTimer) + 1f) / 10f;
             }
         });
-        p.addAnimation(animateHint);
+    }
+
+    @Override
+    public void frame() {
+        getPage().addAnimation(animateHint);
     }
 
     @Override
     public void draw(ShapeRenderer sr, SpriteBatch sb) {
+        boolean activateClick = detectFreshClick();
 
-        boolean activateClick = false;
+        updateScale();
 
-        if(mouseDown != Gdx.input.isButtonPressed(Input.Buttons.LEFT)){
-            mouseDown = !mouseDown;
-            if(mouseDown) {
-                activateClick = true;
-            }
-        }
+        drawMenuBackground(sr);
 
-        float yScale = Source.getScreenHeight() / 3500f;
-        float xScale = Source.getScreenWidth() / 1500f;
-        scale = (float) Math.min(xScale, yScale);
+        // Positions
+        float menuCenterY = Source.getScreenHeight() - MENU_HEIGHT * scale / 2f;
 
-        sr.begin(ShapeRenderer.ShapeType.Filled);
-        sr.setColor(Color.WHITE);
-        sr.rect(0, Source.getScreenHeight() - MENU_HEIGHT * scale, Source.getScreenWidth(), MENU_HEIGHT * scale);
-        sr.setColor(Color.BLACK);
-        sr.rectLine(0, Source.getScreenHeight() - (MENU_HEIGHT + 5) * scale, Source.getScreenWidth(), Source.getScreenHeight() - (MENU_HEIGHT + 5) * scale, 25 * scale);
-        sr.end();
+        float iconX = MENU_HEIGHT * scale / 2f;
+        float iconY = menuCenterY;
 
-        icon.setScale(MENU_HEIGHT * scale / icon.getTexture().getWidth() * .833f);
-        icon.setCenter(MENU_HEIGHT * scale / 2, Source.getScreenHeight() - MENU_HEIGHT * scale / 2);
+        float hintX = Source.getScreenWidth() / 2f - 300f * scale;
+        float hintY = menuCenterY;
 
-        float hintX = Source.getScreenWidth() / 2f - 300 * scale;
-        float hintY = Source.getScreenHeight() - MENU_HEIGHT * scale / 2;
+        float menuX = Source.getScreenWidth() - MENU_HEIGHT * scale / 2f;
+        float menuY = menuCenterY;
 
-        hint.setScale(MENU_HEIGHT * scale / icon.getTexture().getWidth() * .75f * hintScale);
+        // Scales + placement
+        float baseIconScale = MENU_HEIGHT * scale / icon.getTexture().getWidth();
+
+        icon.setScale(baseIconScale * 0.833f);
+        icon.setCenter(iconX, iconY);
+
+        hint.setScale(baseIconScale * 0.75f * hintScale);
         hint.setCenter(hintX, hintY);
 
-        float menuX = Source.getScreenWidth() - MENU_HEIGHT * scale / 2;
-        float menuY = Source.getScreenHeight() - MENU_HEIGHT * scale / 2;
-
-        menu.setScale(MENU_HEIGHT * scale / icon.getTexture().getWidth() * .75f);
+        menu.setScale(baseIconScale * 0.75f);
         menu.setCenter(menuX, menuY);
 
-        font.getData().setScale(scale * (128f / fontSize));
+        // Clock text
+        font.getData().setScale(scale * (128f / FONT_SIZE));
         String clock = convertNumToTime(System.currentTimeMillis() - startTime);
         layout.setText(font, clock);
 
+        // Input + draw
         sb.begin();
-        float hintDistance = (float)Math.sqrt(Math.pow(Source.getScreenMouseX() - hintX, 2) + Math.pow(Source.getScreenMouseY() - hintY, 2));
-        if(hintDistance < 90 * scale && activateClick) {
-            if(!Board.menuOpen) {
-                String word = getRandomWordFromBoard(1);
-                System.out.println(word);
-                board.activateHint(word);
+
+        if (activateClick) {
+            float mouseX = Source.getScreenMouseX();
+            float mouseY = Source.getScreenMouseY();
+
+            if (distance(mouseX, mouseY, hintX, hintY) < 90f * scale) {
+                if (!Board.menuOpen) {
+                    String word = getRandomWordFromBoard(1);
+                    System.out.println(word);
+                    Board.activateHint(word);
+                }
+            }
+
+            if (distance(mouseX, mouseY, menuX, menuY) < 90f * scale) {
+                Board.menuOpen = true;
+                mouseDown = false;
             }
         }
-        float menuDistance = (float)Math.sqrt(Math.pow(Source.getScreenMouseX() - menuX, 2) + Math.pow(Source.getScreenMouseY() - menuY, 2));
-        if(menuDistance < 90 * scale && activateClick) {
-            Board.menuOpen = true;
-            mouseDown = false;
-        }
+
         hint.draw(sb);
         icon.draw(sb);
         menu.draw(sb);
+
         font.setColor(Color.BLACK);
-        font.draw(sb, clock, Source.getScreenWidth() / 2f - layout.width / 2f, Source.getScreenHeight() - MENU_HEIGHT * scale * .833f + layout.height - 20 * scale);
+        font.draw(
+            sb,
+            clock,
+            Source.getScreenWidth() / 2f - layout.width / 2f,
+            Source.getScreenHeight() - MENU_HEIGHT * scale * 0.833f + layout.height - 20f * scale
+        );
+
         sb.end();
     }
 
-    private String getRandomWordFromBoard(int range){
-        float rank = board.getCurrentRank();
-        List<String> validWords = new ArrayList<>();
-        for(int i = 0; i < board.getWordsLeft().size(); i++){
-            if(WordDifficultyRanker.wordDifficulty(board.getWordsLeft().get(i)) < Math.max(rank, 20) + range){
-                validWords.add(board.getWordsLeft().get(i));
-            }
+    // ===== Helpers =====
+
+    private boolean detectFreshClick() {
+        boolean activateClick = false;
+
+        boolean pressed = Gdx.input.isButtonPressed(Input.Buttons.LEFT);
+        if (mouseDown != pressed) {
+            mouseDown = !mouseDown;
+            if (mouseDown) activateClick = true;
         }
-        if(validWords.isEmpty()){
-            return getRandomWordFromBoard(range + 2);
-        }
-        return validWords.get((int)(Math.random() * validWords.size()));
+
+        return activateClick;
     }
 
-    private String convertNumToTime(long millis){
+    private void updateScale() {
+        float yScale = Source.getScreenHeight() / 3500f;
+        float xScale = Source.getScreenWidth() / 1500f;
+        scale = Math.min(xScale, yScale);
+    }
+
+    private void updateScaleForFont() {
+        float yScale = Source.getScreenHeight() / 3000f;
+        float xScale = Source.getScreenWidth() / 1500f;
+        scale = Math.min(xScale, yScale);
+        font.getData().setScale(scale);
+    }
+
+    private void drawMenuBackground(ShapeRenderer sr) {
+        float topY = Source.getScreenHeight() - MENU_HEIGHT * scale;
+
+        sr.begin(ShapeRenderer.ShapeType.Filled);
+
+        sr.setColor(Color.WHITE);
+        sr.rect(0, topY, Source.getScreenWidth(), MENU_HEIGHT * scale);
+
+        sr.setColor(Color.BLACK);
+        sr.rectLine(
+            0,
+            Source.getScreenHeight() - (MENU_HEIGHT + 5) * scale,
+            Source.getScreenWidth(),
+            Source.getScreenHeight() - (MENU_HEIGHT + 5) * scale,
+            25 * scale
+        );
+
+        sr.end();
+    }
+
+    private float distance(float x1, float y1, float x2, float y2) {
+        return (float) Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+    }
+
+    private String getRandomWordFromBoard(int range) {
+        float rank = Board.getCurrentRank();
+        List<String> validWords = new ArrayList<>();
+
+        for (int i = 0; i < Board.getWordsLeft().size(); i++) {
+            String w = Board.getWordsLeft().get(i);
+            if (WordDifficultyRanker.wordDifficulty(w) < Math.max(rank, 20) + range) {
+                validWords.add(w);
+            }
+        }
+
+        if (validWords.isEmpty()) {
+            return getRandomWordFromBoard(range + 2);
+        }
+
+        return validWords.get((int) (Math.random() * validWords.size()));
+    }
+
+    private String convertNumToTime(long millis) {
         long minutes = millis / 60000;
         millis -= minutes * 60000;
         return add0("" + minutes) + ":" + add0("" + (millis / 1000));
     }
 
-    private String add0(String s){
-        if(s.length() == 1){
-            return "0" + s;
-        }
+    private String add0(String s) {
+        if (s.length() == 1) return "0" + s;
         return s;
     }
 
-    private String constrain(String s, GlyphLayout gl){
+    // Kept as-is (unused in this class currently), just reorganized.
+    private String constrain(String s, GlyphLayout gl) {
         String name = com.grantkoupal.letterlink.DataManager.userName;
-        if(gl.width > Source.getScreenWidth() / 2f - 175 * scale){
+
+        if (gl.width > Source.getScreenWidth() / 2f - 175 * scale) {
             int i = s.length();
-            while(gl.width > Source.getScreenWidth() / 2f - 250 * scale){
+            while (gl.width > Source.getScreenWidth() / 2f - 250 * scale) {
                 i--;
                 layout.setText(font, name.substring(0, i));
             }
             return s.substring(0, i) + "...";
-        } else {
-            return s;
         }
+
+        return s;
     }
 
     @Override

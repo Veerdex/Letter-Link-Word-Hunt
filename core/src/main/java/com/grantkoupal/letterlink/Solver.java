@@ -2,10 +2,7 @@ package com.grantkoupal.letterlink;
 
 import com.badlogic.gdx.Gdx;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Handles word searching, validation, and scoring for a Boggle-style letter board.
@@ -13,12 +10,13 @@ import java.util.List;
  */
 public class Solver {
 
-    // ========== Constants ==========
-
-    private static int boardValue = 0;
+    // ===== Constants =====
     private static final int ALPHABET_SIZE = 26;
-    private static final int ASCII_OFFSET = 97; // 'a' in ASCII
+    private static final int ASCII_OFFSET = 97; // 'a'
     private static final String DICTIONARY_FILE = "Words.txt";
+
+    // ===== Board value (external usage) =====
+    private static int boardValue = 0;
 
     /**
      * Letter frequency weights for random board generation.
@@ -54,40 +52,46 @@ public class Solver {
         7    // z
     };
 
-    // ========== Dictionary Structure ==========
+    // ===== Dictionary Structure =====
 
     /**
      * 4D word storage indexed by first three letters [a-z][a-z][a-z].
-     * Provides O(1) prefix lookup for fast word validation during search.
+     * Provides O(1) bucket lookup for fast prefix/word validation during search.
      */
     private static final List<List<List<List<String>>>> dictionary = new ArrayList<>();
 
-    // ========== Board State ==========
-
+    // ===== Board State =====
     private static final List<List<Character>> board = new ArrayList<>();
     private static int boardWidth = 0;
     private static int boardHeight = 0;
 
-    // ========== Search Results ==========
-
+    // ===== Search Results =====
     private static final List<String> treasureWords = new ArrayList<>();
     private static final List<List<Integer>> wordPaths = new ArrayList<>();
-    private static int[] wordLengthCounts = new int[26];
+    private static final int[] wordLengthCounts = new int[26];
     private static int totalPoints = 0;
 
-    // ========== Board Configuration ==========
+    // ===== Rank calc state =====
+    private static int points;
+
+    // ======================================================================
+    // Board Configuration
+    // ======================================================================
 
     /**
      * Sets the board layout from a string of letters.
      * Validates that the board is rectangular.
      *
-     * @param width Board width
-     * @param height Board height
+     * @param width   Board width
+     * @param height  Board height
      * @param letters String of letters (length must equal width * height)
      * @throws IllegalArgumentException if board is not rectangular
      */
     public static void setBoard(int width, int height, String letters) {
-        // Parse letters into 2D structure
+        boardWidth = width;
+        boardHeight = height;
+
+        // Parse into a new 2D structure first
         List<List<Character>> newBoard = new ArrayList<>();
         for (int x = 0; x < width; x++) {
             newBoard.add(new ArrayList<>());
@@ -96,10 +100,9 @@ public class Solver {
             }
         }
 
-        // Validate rectangular shape
         validateBoardShape(newBoard);
 
-        // Copy into internal board representation
+        // Copy into internal board
         board.clear();
         for (int x = 0; x < width; x++) {
             board.add(new ArrayList<>());
@@ -107,9 +110,6 @@ public class Solver {
                 board.get(x).add(newBoard.get(x).get(y));
             }
         }
-
-        boardWidth = width;
-        boardHeight = height;
     }
 
     /**
@@ -124,7 +124,9 @@ public class Solver {
         }
     }
 
-    // ========== Dictionary Management ==========
+    // ======================================================================
+    // Dictionary Management
+    // ======================================================================
 
     /**
      * Initializes or resets the dictionary and clears previous search results.
@@ -150,9 +152,10 @@ public class Solver {
                     }
                 }
             }
-        } else {
-            clearDictionary();
+            return;
         }
+
+        clearDictionary();
     }
 
     /**
@@ -177,17 +180,14 @@ public class Solver {
         int start = 0;
         int end;
 
-        // Process each line
         while ((end = fileContent.indexOf('\n', start)) != -1) {
-            String word = fileContent.substring(start, end).trim();
-            addWordToDictionary(word);
+            addWordToDictionary(fileContent.substring(start, end).trim());
             start = end + 1;
         }
 
-        // Handle last line if no newline at end of file
+        // Last line (if no trailing newline)
         if (start < fileContent.length()) {
-            String word = fileContent.substring(start).trim();
-            addWordToDictionary(word);
+            addWordToDictionary(fileContent.substring(start).trim());
         }
     }
 
@@ -195,19 +195,16 @@ public class Solver {
      * Adds a word to the dictionary if it's 3+ letters.
      */
     private static void addWordToDictionary(String word) {
-        if (word.length() >= 3) {
-            try {
-                int firstLetter = word.charAt(0) - ASCII_OFFSET;
-                int secondLetter = word.charAt(1) - ASCII_OFFSET;
-                int thirdLetter = word.charAt(2) - ASCII_OFFSET;
+        if (word.length() < 3) return;
 
-                dictionary.get(firstLetter)
-                    .get(secondLetter)
-                    .get(thirdLetter)
-                    .add(word);
-            } catch (Exception e) {
-                // Ignore words with invalid characters
-            }
+        try {
+            int a = word.charAt(0) - ASCII_OFFSET;
+            int b = word.charAt(1) - ASCII_OFFSET;
+            int c = word.charAt(2) - ASCII_OFFSET;
+
+            dictionary.get(a).get(b).get(c).add(word);
+        } catch (Exception ignored) {
+            // Ignore words with invalid characters
         }
     }
 
@@ -218,23 +215,22 @@ public class Solver {
         totalPoints = 0;
         treasureWords.clear();
         wordPaths.clear();
-
-        for (int i = 0; i < wordLengthCounts.length; i++) {
-            wordLengthCounts[i] = 0;
-        }
+        Arrays.fill(wordLengthCounts, 0);
     }
 
-    // ========== Word Search ==========
+    // ======================================================================
+    // Word Search
+    // ======================================================================
 
     /**
      * Recursively searches the board for valid words starting from a position.
      * Uses backtracking to explore all possible paths without revisiting cells.
      *
-     * @param x Starting x coordinate
-     * @param y Starting y coordinate
+     * @param x           Starting x coordinate
+     * @param y           Starting y coordinate
      * @param currentWord Word built so far
-     * @param visited Tracks which cells have been used in current path
-     * @param path Current coordinate path (x,y pairs)
+     * @param visited     Tracks which cells have been used in current path
+     * @param path        Current coordinate path (x,y pairs)
      * @return List of valid words found from this position
      */
     public static List<String> checkWords(int x, int y, String currentWord, int[][] visited, List<Integer> path) {
@@ -255,30 +251,29 @@ public class Solver {
             return foundWords;
         }
 
-        // Check if current word is in dictionary
+        // If this is a word, record it
         if (currentWord.length() > 2) {
             addIfValidWord(currentWord, path, foundWords);
         }
 
-        // Mark current cell as visited
+        // Mark current cell visited
         int[][] newVisited = copyVisitedGrid(visited);
         newVisited[x][y] = 1;
 
         // Explore all 8 neighboring cells
         for (int dx = -1; dx <= 1; dx++) {
             for (int dy = -1; dy <= 1; dy++) {
-                if (dx == 0 && dy == 0) continue; // Skip current cell
+                if (dx == 0 && dy == 0) continue;
 
                 int newX = x + dx;
                 int newY = y + dy;
 
                 try {
                     if (newVisited[newX][newY] == 0) {
-                        List<String> subWords = checkWords(newX, newY, currentWord, newVisited, path);
-                        foundWords.addAll(subWords);
+                        foundWords.addAll(checkWords(newX, newY, currentWord, newVisited, path));
                     }
-                } catch (Exception e) {
-                    // Out of bounds, skip
+                } catch (Exception ignored) {
+                    // Out of bounds
                 }
             }
         }
@@ -289,43 +284,34 @@ public class Solver {
     /**
      * Sorts two parallel lists by the length of words in the first list (longest first), then alphabetically.
      * Both lists are sorted in the same order to maintain index correspondence.
-     * @param list Primary list to sort by (determines sort order)
-     * @param parallelList Secondary list that will be reordered to match list's new order
      */
     public static void organize() {
-        // Create a list of indices
         List<Integer> indices = new ArrayList<>();
         for (int i = 0; i < treasureWords.size(); i++) {
             indices.add(i);
         }
 
-        // Sort indices based on the sorting criteria
         Collections.sort(indices, new Comparator<Integer>() {
             @Override
             public int compare(Integer i1, Integer i2) {
                 String s1 = treasureWords.get(i1);
                 String s2 = treasureWords.get(i2);
 
-                // First compare by length (longest first)
                 int lengthCompare = Integer.compare(s2.length(), s1.length());
-
-                // If lengths are equal, compare alphabetically
                 if (lengthCompare == 0) {
                     return s1.compareToIgnoreCase(s2);
                 }
-
                 return lengthCompare;
             }
         });
 
-        // Create temporary copies of both lists
-        List<String> tempList = new ArrayList<>(treasureWords);
-        List<List<Integer>> tempParallelList = new ArrayList<>(wordPaths);
+        List<String> tempWords = new ArrayList<>(treasureWords);
+        List<List<Integer>> tempPaths = new ArrayList<>(wordPaths);
 
-        // Reorder both lists based on sorted indices
         for (int i = 0; i < indices.size(); i++) {
-            treasureWords.set(i, tempList.get(indices.get(i)));
-            wordPaths.set(i, tempParallelList.get(indices.get(i)));
+            int idx = indices.get(i);
+            treasureWords.set(i, tempWords.get(idx));
+            wordPaths.set(i, tempPaths.get(idx));
         }
     }
 
@@ -343,17 +329,12 @@ public class Solver {
     /**
      * Checks if the current word is a valid prefix in the dictionary.
      * A prefix is valid if any dictionary word starts with it.
-     *
-     * @param prefix Word prefix to check
-     * @return true if at least one dictionary word starts with this prefix
      */
     private static boolean isValidPrefix(String prefix) {
         List<String> candidates = getDictionaryEntry(prefix);
 
         for (String word : candidates) {
-            if (word.startsWith(prefix)) {
-                return true;
-            }
+            if (word.startsWith(prefix)) return true;
         }
         return false;
     }
@@ -361,10 +342,6 @@ public class Solver {
     /**
      * Adds the word to results if it exists in the dictionary.
      * Removes the word from dictionary to prevent duplicates.
-     *
-     * @param word Word to check
-     * @param path Coordinate path used to form the word
-     * @param foundWords List to add word to if valid
      */
     private static void addIfValidWord(String word, List<Integer> path, List<String> foundWords) {
         List<String> candidates = getDictionaryEntry(word);
@@ -381,35 +358,29 @@ public class Solver {
     }
 
     /**
-     * Gets the dictionary entry for words with this prefix.
+     * Gets the dictionary bucket for words with this prefix.
      */
     private static List<String> getDictionaryEntry(String word) {
-        int firstLetter = word.charAt(0) - ASCII_OFFSET;
-        int secondLetter = word.charAt(1) - ASCII_OFFSET;
-        int thirdLetter = word.charAt(2) - ASCII_OFFSET;
+        int a = word.charAt(0) - ASCII_OFFSET;
+        int b = word.charAt(1) - ASCII_OFFSET;
+        int c = word.charAt(2) - ASCII_OFFSET;
 
-        return dictionary.get(firstLetter)
-            .get(secondLetter)
-            .get(thirdLetter);
+        return dictionary.get(a).get(b).get(c);
     }
 
-    // ========== Scoring ==========
+    // ======================================================================
+    // Scoring
+    // ======================================================================
 
     /**
      * Calculates the point value for a word based on its length.
      *
-     * @param word Word to score
      * @return Point value (100 for 3 letters, scaling up to 10,600 for 25 letters)
      */
     public static int getWordValue(String word) {
         int length = word.length();
+        if (length < 3 || length > 25) return 0;
 
-        if (length < 3 || length > 25) {
-            return 0;
-        }
-
-        // Base value: 100 points for 3-letter words
-        // Increases by 400 for length 4, then varying amounts
         switch (length) {
             case 3:  return 100;
             case 4:  return 400;
@@ -440,8 +411,6 @@ public class Solver {
 
     /**
      * Calculates total score from all found words and updates length statistics.
-     *
-     * @return Total points from all found words
      */
     public static int calculatePoints() {
         totalPoints = 0;
@@ -460,25 +429,22 @@ public class Solver {
         return totalPoints;
     }
 
-    // ========== Board Generation ==========
+    // ======================================================================
+    // Board Generation
+    // ======================================================================
 
     /**
      * Generates a random board using weighted letter frequencies.
-     * More common letters (like 'e', 'a', 't') appear more frequently.
-     *
-     * @param width Board width
-     * @param height Board height
-     * @return String of random letters
      */
     public static String generateBoard(int width, int height) {
         int totalWeight = calculateTotalWeight();
-        StringBuilder board = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
 
         for (int i = 0; i < width * height; i++) {
-            board.append(selectRandomLetter(totalWeight));
+            sb.append(selectRandomLetter(totalWeight));
         }
 
-        return board.toString();
+        return sb.toString();
     }
 
     /**
@@ -486,17 +452,12 @@ public class Solver {
      */
     private static int calculateTotalWeight() {
         int total = 0;
-        for (int weight : LETTER_WEIGHTS) {
-            total += weight;
-        }
+        for (int weight : LETTER_WEIGHTS) total += weight;
         return total;
     }
 
     /**
      * Selects a random letter based on weighted probabilities.
-     *
-     * @param totalWeight Sum of all letter weights
-     * @return Random letter ('a'-'z')
      */
     private static char selectRandomLetter(int totalWeight) {
         int random = (int) (Math.random() * totalWeight);
@@ -509,10 +470,12 @@ public class Solver {
             }
         }
 
-        return '!'; // Should never happen
+        return '!'; // should never happen
     }
 
-    // ========== Getters ==========
+    // ======================================================================
+    // Getters / Misc
+    // ======================================================================
 
     public static List<List<Character>> getBoard() {
         return board;
@@ -532,51 +495,49 @@ public class Solver {
         return wordPaths.get(index);
     }
 
-    /**
-     * Gets the total number of words found.
-     */
     public static int getNumWords() {
         return wordPaths.size();
     }
 
-    public static int getBoardValue(){
+    public static int getBoardValue() {
         return boardValue;
     }
 
-    public static void setBoardValue(int value){
+    public static void setBoardValue(int value) {
         boardValue = value;
     }
 
-    public static int getBoardWidth(){
+    public static int getBoardWidth() {
         return boardWidth;
     }
 
-    public static int getBoardHeight(){
+    public static int getBoardHeight() {
         return boardHeight;
     }
 
-    private static int points;
+    // ======================================================================
+    // Rank
+    // ======================================================================
 
-    public static float calculateRank(List<String> foundWords){
+    public static float calculateRank(List<String> foundWords) {
         points = 0;
-        for(int i = 0; i < foundWords.size(); i++){
-            points += getWordValue(foundWords.get(i));
+        for (String foundWord : foundWords) {
+            points += getWordValue(foundWord);
         }
-
         return adjust(50, 25, 0);
     }
 
-    private static float adjust(float rank, float change, int iteration){
+    private static float adjust(float rank, float change, int iteration) {
         int tempPoints = 0;
-        for(int i = 0; i < treasureWords.size(); i++){
-            if(WordDifficultyRanker.wordDifficulty(treasureWords.get(i)) < rank){
-                tempPoints += getWordValue(treasureWords.get(i));
+        for (String treasureWord : treasureWords) {
+            if (WordDifficultyRanker.wordDifficulty(treasureWord) < rank) {
+                tempPoints += getWordValue(treasureWord);
             }
         }
 
-        if(iteration == 100){
+        if (iteration == 100) {
             return rank;
-        } else if(points > tempPoints){
+        } else if (points > tempPoints) {
             return adjust(rank + change, change / 2, iteration + 1);
         } else {
             return adjust(rank - change, change / 2, iteration + 1);

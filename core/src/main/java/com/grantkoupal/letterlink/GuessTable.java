@@ -15,119 +15,167 @@ import java.util.List;
 
 /**
  * Displays a scrollable table of words that the player has found.
- * Renders on the right side of the screen and supports mouse scrolling.
+ * Rendered on the right side of the screen with smooth scrolling and fade effects.
+ * Automatically scrolls to show newly added words.
  */
 public class GuessTable extends Agent {
 
-    private final int VISIBLE_ROWS = 8;
+    // ========================================
+    // CONSTANTS - DISPLAY
+    // ========================================
 
-    // ========== Graphics ==========
+    private static final int VISIBLE_ROWS = 8;
+    private static final int FONT_SIZE = 32;
+    private static final float FONT_SCALE_RATIO = 64f / FONT_SIZE;
+
+    // ========================================
+    // CONSTANTS - LAYOUT
+    // ========================================
+
+    private static final float SCREEN_HEIGHT_REFERENCE = 3000f;
+    private static final float SCREEN_WIDTH_REFERENCE = 1500f;
+
+    private static final float TABLE_Y_OFFSET = -1350f;
+    private static final float TABLE_TOP_THRESHOLD = -700f;
+
+    private static final float ROW_HEIGHT = 75f;
+    private static final float LETTER_SPACING = 50f;
+
+    // ========================================
+    // CONSTANTS - SCROLLING
+    // ========================================
+
+    private static final float SCROLL_FRICTION = 0.1f;
+    private static final int MIN_VISIBLE_ROWS_BEFORE_SCROLL = 7;
+
+    // ========================================
+    // STATE
+    // ========================================
+
     private BitmapFont font;
-    private GlyphLayout fontLayout;
-    private final int fontSize = 32;
+    private final GlyphLayout fontLayout;
+    private final List<String> listOfWordsFound;
 
-    // ========== Data ==========
-    private List<String> listOfWordsFound;
-    private int listSize;
-
-    // ========== Scroll State ==========
+    // Scroll state
     private float scroll = 0;
     private float scrollMotion = 0;
+    private int listSize;
 
-    // ========== Layout ==========
+    // Layout
     private float scale = 1;
-    private float hintX = 0;
-    private float hintY = 0;
+    private float tableX = 0;
+    private float tableY = 0;
 
-    // ========== Constructor ==========
+    // ========================================
+    // CONSTRUCTOR
+    // ========================================
 
     /**
      * Creates a new GuessTable to display found words.
-     * @param listOfWordsFound List of words the player has discovered
+     * @param listOfWordsFound Reference to the list of discovered words
      */
     public GuessTable(List<String> listOfWordsFound) {
         this.listOfWordsFound = listOfWordsFound;
         this.listSize = listOfWordsFound.size();
+        this.fontLayout = new GlyphLayout();
 
-        fontLayout = new GlyphLayout();
         initializeFont();
         setupScrollAnimation();
     }
 
-    // ========== Initialization ==========
+    // ========================================
+    // INITIALIZATION
+    // ========================================
 
     private void initializeFont() {
-        font = Source.generateFont(DataManager.fontName, fontSize);
+        font = Source.generateFont(DataManager.fontName, FONT_SIZE);
     }
 
     /**
-     * Sets up the scroll animation that responds to mouse input on the right side.
+     * Sets up continuous scroll animation that responds to mouse input.
      */
     private void setupScrollAnimation() {
         Source.addAnimation(new Animation(System.nanoTime(), Animation.INDEFINITE, new Action() {
             @Override
             public void run(float delta) {
-                if(Board.menuOpen) return;
-                handleScrollInput(delta);
+                if (!Board.menuOpen) {
+                    handleScrollInput(delta);
+                }
             }
         }));
     }
 
-    // ========== Scroll Handling ==========
+    // ========================================
+    // SCROLL HANDLING
+    // ========================================
 
     /**
      * Handles mouse scrolling when hovering over the table area.
      */
     private void handleScrollInput(float delta) {
-        boolean isOverTable = Source.getScreenMouseX() > hintX &&
-            Source.getScreenMouseX() > Source.getScreenWidth() / 2f &&
-            Source.getScreenMouseY() < Source.getScreenHeight() / 2f - scale * 700;
-
-        if (isOverTable && Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
-            scrollMotion = Gdx.input.getDeltaY();
+        if (isMouseOverTable()) {
+            updateScrollMotion();
         }
 
+        applyScrollMotion(delta);
+        applyScrollFriction(delta);
+    }
+
+    /**
+     * Checks if mouse is hovering over the table area.
+     */
+    private boolean isMouseOverTable() {
+        return Source.getScreenMouseX() > tableX &&
+            Source.getScreenMouseX() > Source.getScreenWidth() / 2f &&
+            Source.getScreenMouseY() < Source.getScreenHeight() / 2f + TABLE_TOP_THRESHOLD * scale;
+    }
+
+    /**
+     * Updates scroll motion based on mouse drag.
+     */
+    private void updateScrollMotion() {
+        if (Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
+            scrollMotion = Gdx.input.getDeltaY();
+        }
+    }
+
+    /**
+     * Applies scroll motion to current scroll position.
+     */
+    private void applyScrollMotion(float delta) {
         setScroll(scroll + scrollMotion * delta);
-        scrollMotion *= (float) Math.pow(0.1f, delta);
+    }
+
+    /**
+     * Applies friction to gradually slow down scrolling.
+     */
+    private void applyScrollFriction(float delta) {
+        scrollMotion *= (float) Math.pow(SCROLL_FRICTION, delta);
     }
 
     /**
      * Sets the scroll position with bounds checking.
-     * @param f New scroll position
+     * @param newScroll Desired scroll position
      */
-    public void setScroll(float f) {
-        int maxScroll = Math.max(0, listOfWordsFound.size() - 7);
+    public void setScroll(float newScroll) {
+        int maxScroll = calculateMaxScroll();
 
-        if (f < 0) {
+        if (newScroll < 0) {
             scroll = 0;
             scrollMotion = 0;
-        } else if (f > maxScroll) {
+        } else if (newScroll > maxScroll) {
             scroll = maxScroll;
             scrollMotion = 0;
         } else {
-            scroll = f;
+            scroll = newScroll;
         }
     }
 
-    // ========== Drawing ==========
-
-    @Override
-    public void draw(ShapeRenderer sr, SpriteBatch sb) {
-        calculateLayout();
-        handleNewWordAdded();
-        render(sb);
-    }
-
     /**
-     * Calculates screen-relative layout positions and scales.
+     * Calculates the maximum allowed scroll position.
      */
-    private void calculateLayout() {
-        float yScale = Source.getScreenHeight() / 3000f;
-        float xScale = Source.getScreenWidth() / 1500f;
-        scale = Math.min(xScale, yScale);
-        hintX = Source.getScreenWidth() / 2f;
-        hintY = Source.getScreenHeight() / 2f - scale * 1350;
-        font.getData().setScale(scale * (64f / fontSize));
+    private int calculateMaxScroll() {
+        return Math.max(0, listOfWordsFound.size() - MIN_VISIBLE_ROWS_BEFORE_SCROLL);
     }
 
     /**
@@ -140,69 +188,153 @@ public class GuessTable extends Agent {
         }
     }
 
-    /**
-     * Renders the word list to the framebuffer.
-     */
-    private void render(SpriteBatch sb) {
+    // ========================================
+    // MAIN DRAW METHOD
+    // ========================================
 
+    @Override
+    public void draw(ShapeRenderer sr, SpriteBatch sb) {
+        calculateLayout();
+        handleNewWordAdded();
+        renderWordList(sb);
+    }
+
+    // ========================================
+    // LAYOUT CALCULATION
+    // ========================================
+
+    /**
+     * Calculates screen-relative layout positions and scales.
+     */
+    private void calculateLayout() {
+        calculateScreenScale();
+        calculateTablePosition();
+        updateFontScale();
+    }
+
+    private void calculateScreenScale() {
+        float yScale = Source.getScreenHeight() / SCREEN_HEIGHT_REFERENCE;
+        float xScale = Source.getScreenWidth() / SCREEN_WIDTH_REFERENCE;
+        scale = Math.min(xScale, yScale);
+    }
+
+    private void calculateTablePosition() {
+        tableX = Source.getScreenWidth() / 2f;
+        tableY = Source.getScreenHeight() / 2f + TABLE_Y_OFFSET * scale;
+    }
+
+    private void updateFontScale() {
+        font.getData().setScale(scale * FONT_SCALE_RATIO);
+    }
+
+    // ========================================
+    // RENDERING
+    // ========================================
+
+    /**
+     * Renders the word list with scrolling and fade effects.
+     */
+    private void renderWordList(SpriteBatch sb) {
         font.setColor(Color.WHITE);
 
         sb.begin();
         for (int i = 0; i < VISIBLE_ROWS; i++) {
-            printWord(sb, i);
+            renderWordAtRow(sb, i);
         }
         sb.end();
     }
 
     /**
-     * Renders a single word at the given row index.
+     * Renders a single word at the given row index with fade effects.
      * @param sb SpriteBatch to draw with
-     * @param y Row index (0-9)
+     * @param rowIndex Row index (0 to VISIBLE_ROWS-1)
      */
-    private void printWord(SpriteBatch sb, int y) {
-        int wordIndex = y + (int) scroll;
+    private void renderWordAtRow(SpriteBatch sb, int rowIndex) {
+        int wordIndex = calculateWordIndex(rowIndex);
 
-        // Check bounds
-        if (wordIndex < 0 || wordIndex >= listOfWordsFound.size()) {
+        if (!isValidWordIndex(wordIndex)) {
             return;
         }
 
         String word = listOfWordsFound.get(wordIndex);
-        float yPos = (y - scroll % 1) * 75 * scale;
+        float yPosition = calculateRowYPosition(rowIndex);
 
-        if(y == 0){
-            font.setColor(1, 1, 1, 1 - scroll % 1);
-        } else if(y == VISIBLE_ROWS - 1){
-            font.setColor(1, 1, 1, scroll % 1);
+        applyFadeEffect(rowIndex);
+        renderWord(sb, word, yPosition);
+    }
+
+    /**
+     * Calculates which word to display at a given row.
+     */
+    private int calculateWordIndex(int rowIndex) {
+        return rowIndex + (int) scroll;
+    }
+
+    /**
+     * Checks if word index is within bounds.
+     */
+    private boolean isValidWordIndex(int wordIndex) {
+        return wordIndex >= 0 && wordIndex < listOfWordsFound.size();
+    }
+
+    /**
+     * Calculates the Y position for a row, accounting for sub-pixel scrolling.
+     */
+    private float calculateRowYPosition(int rowIndex) {
+        return (rowIndex - scroll % 1) * ROW_HEIGHT * scale;
+    }
+
+    /**
+     * Applies fade-in/fade-out effects to first and last visible rows.
+     */
+    private void applyFadeEffect(int rowIndex) {
+        if (rowIndex == 0) {
+            // Fade out top row as it scrolls off screen
+            float alpha = 1 - scroll % 1;
+            font.setColor(1, 1, 1, alpha);
+        } else if (rowIndex == VISIBLE_ROWS - 1) {
+            // Fade in bottom row as it scrolls into view
+            float alpha = scroll % 1;
+            font.setColor(1, 1, 1, alpha);
         } else {
+            // Full opacity for middle rows
             font.setColor(Color.WHITE);
-        }
-
-        // Draw each letter of the word
-        for (int i = 0; i < word.length(); i++) {
-            drawLetter(yPos, i * 50 * scale, "" + word.charAt(i), sb);
         }
     }
 
     /**
-     * Draws a single letter at the specified position.
-     * @param y Vertical position
-     * @param x Horizontal position
-     * @param letter Letter to draw
-     * @param sb SpriteBatch to draw with
+     * Renders a complete word letter by letter.
      */
-    private void drawLetter(float y, float x, String letter, SpriteBatch sb) {
-        fontLayout.setText(font, letter.toUpperCase());
-
-        x += -fontLayout.width / 2 + hintX;
-        y += fontLayout.height / 2 + hintY;
-
-        font.draw(sb, letter.toUpperCase(), x, y);
+    private void renderWord(SpriteBatch sb, String word, float yPosition) {
+        for (int i = 0; i < word.length(); i++) {
+            float xOffset = i * LETTER_SPACING * scale;
+            renderLetter(sb, yPosition, xOffset, word.charAt(i));
+        }
     }
 
-    // ========== Cleanup ==========
+    /**
+     * Renders a single letter at the specified position.
+     * @param sb SpriteBatch to draw with
+     * @param yPosition Vertical position
+     * @param xOffset Horizontal offset from table origin
+     * @param letter Letter character to draw
+     */
+    private void renderLetter(SpriteBatch sb, float yPosition, float xOffset, char letter) {
+        String letterStr = String.valueOf(letter).toUpperCase();
+        fontLayout.setText(font, letterStr);
+
+        float x = tableX + xOffset - fontLayout.width / 2;
+        float y = tableY + yPosition + fontLayout.height / 2;
+
+        font.draw(sb, letterStr, x, y);
+    }
+
+    // ========================================
+    // CLEANUP
+    // ========================================
 
     @Override
     public void dispose() {
+        // Font is managed by Source, no disposal needed
     }
 }

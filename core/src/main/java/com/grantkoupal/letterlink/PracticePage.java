@@ -13,109 +13,123 @@ import java.util.List;
  */
 public class PracticePage extends Page {
 
-    // ========== Constants ==========
-
-    // ========== Game Components ==========
+    // ===== Game Components =====
     private Board board;
+
     private HintTable hintTable;
     private GuessTable guessTable;
     private ChainDisplay chainDisplay;
     private PointsDisplay pointsDisplay;
     private MenuDisplay menuDisplay;
+
     private PracticeMenu practiceMenu;
     private Settings settings;
 
-    // ========== Initialization ==========
-
     @Override
     public void initialize() {
-        board = new Board(Solver.getBoardWidth(), Solver.getBoardHeight(), Solver.getBoard());
-
-        /*
-        Board Generation Performance (4x4 grid, 3 min or 100 iterations):
-        Power 0 -> Time: .02s   Points: 84,490    Rating: 5,052,045
-        Power 1 -> Time: .08s   Points: 112,622   Rating: 1,350,481
-        Power 2 -> Time: .2s    Points: 175,489   Rating: 837,926
-        Power 3 -> Time: .56s   Points: 281,323   Rating: 503,596
-        Power 4 -> Time: 1.07s  Points: 382,028   Rating: 355,273
-        Power 5 -> Time: 12.11s Points: 786,881   Rating: 64,958
-        Power 6 -> Time: 20.94s Points: 929,511   Rating: 44,383
-        Power 7 -> Time: 46.97s Points: 893,960   Rating: 19,030
-        Power 8 -> Time: 32.16s Points: 882,833   Rating: 27,451
-        Power 9 -> Time: 25.84s Points: 977,557   Rating: 37,828
-        */
-
-        board.addAnimations(this);
+        initBoard();
         add(board);
 
-        logBoardStatistics();
+        computeAndSetSRankScore();
 
         createUIComponents();
         setupResizeHandler();
     }
 
-    /**
-     * Calculates and logs predicted score based on word difficulty.
-     * Only counts words with difficulty < 20 as "findable".
-     */
-    private void logBoardStatistics() {
-        List<String> words = board.getWordsInBoard();
+    // ===== Initialization helpers =====
 
-        System.out.println(words);
+    private void initBoard() {
+        board = new Board();
+        Board.loadNewBoard();
 
-        float predictedScore = 0;
-        float totalPossibleScore = 0;
-
-        for (String word : words) {
-            int wordValue = Solver.getWordValue(word);
-            totalPossibleScore += wordValue;
-
-            // Only count easier words in predicted score
-            if (WordDifficultyRanker.wordDifficulty(word) < 25) {
-                predictedScore += wordValue;
-            }
-        }
-
-        System.out.println("Predicted Score(" + (int)Math.pow(25, 1.25) + "): " + predictedScore);
-        System.out.println("Total Possible: " + totalPossibleScore);
+        /*
+         Board Generation Performance (4x4 grid, 3 min or 100 iterations):
+         Power 0 -> Time: .02s   Points: 84,490    Rating: 5,052,045
+         Power 1 -> Time: .08s   Points: 112,622   Rating: 1,350,481
+         Power 2 -> Time: .2s    Points: 175,489   Rating: 837,926
+         Power 3 -> Time: .56s   Points: 281,323   Rating: 503,596
+         Power 4 -> Time: 1.07s  Points: 382,028   Rating: 355,273
+         Power 5 -> Time: 12.11s Points: 786,881   Rating: 64,958
+         Power 6 -> Time: 20.94s Points: 929,511   Rating: 44,383
+         Power 7 -> Time: 46.97s Points: 893,960   Rating: 19,030
+         Power 8 -> Time: 32.16s Points: 882,833   Rating: 27,451
+         Power 9 -> Time: 25.84s Points: 977,557   Rating: 37,828
+         */
     }
 
     /**
-     * Creates and adds all UI components (tables, displays).
+     * Calculates a target score (S-rank score) based on a subset of easier words.
+     * Original behavior preserved (same math + loop structure).
      */
+    private void computeAndSetSRankScore() {
+        List<String> words = Board.getWordsInBoard();
+
+        int total;
+        int x = words.size();
+
+        if (x < 1149.62325) {
+            int aValue = (int) (-20 * (Math.log(x) / Math.log(5)) + 100);
+            total = (int) (aValue * x / 178.57527f);
+        } else {
+            total = 80;
+        }
+
+        float predictedScore = 0;
+        float totalPossibleScore = 0; // kept (even if unused) to preserve structure/intent
+        int count = 0;
+
+        main:
+        for (int a = 0; a < 20; a++) {
+            for (int i = a; i < words.size(); i += 20) {
+                if (count == total) break main;
+
+                String word = words.get(i);
+
+                // Only count easier words in predicted score
+                if (WordDifficultyRanker.wordDifficulty(word) < 80) {
+                    count++;
+                    predictedScore += Solver.getWordValue(word);
+                }
+            }
+        }
+
+        for (String word : words) {
+            totalPossibleScore += Solver.getWordValue(word);
+        }
+
+        board.setSRankScore((int) predictedScore);
+    }
+
     private void createUIComponents() {
-        // Left side: shows all possible words (hidden until found)
+        // Left side: all possible words (hidden until found)
         hintTable = new HintTable(board.getWordsInBoard(), board.getWordsFound());
         add(hintTable);
 
-        // Right side: shows words player has found
+        // Right side: words the player has found
         guessTable = new GuessTable(board.getListOfWordsFound());
         add(guessTable);
 
-        // Displays current letter chain being traced
-        chainDisplay = new ChainDisplay(board);
+        // Current letter chain being traced
+        chainDisplay = new ChainDisplay();
         add(chainDisplay);
 
-        // Shows current score and points
-        pointsDisplay = new PointsDisplay(board, this);
+        // Score display
+        pointsDisplay = new PointsDisplay();
         add(pointsDisplay);
 
-        // Displays icon, time left, and rank
-        menuDisplay = new MenuDisplay(board, this);
+        // Top menu / HUD
+        menuDisplay = new MenuDisplay();
         add(menuDisplay);
 
-        // Menu
-        practiceMenu = new PracticeMenu(this, board);
+        // Pause/menu overlay
+        practiceMenu = new PracticeMenu();
         add(practiceMenu);
 
-        // Settings
+        // Settings overlay
         settings = new Settings();
         add(settings);
     }
 
-    /**
-     * Sets up handler to recreate board framebuffer on window resize.
-     */
     private void setupResizeHandler() {
         addResize(new Process() {
             @Override
@@ -132,7 +146,7 @@ public class PracticePage extends Page {
         });
     }
 
-    // ========== Page Lifecycle ==========
+    // ===== Page Lifecycle =====
 
     @Override
     public void restart() {
