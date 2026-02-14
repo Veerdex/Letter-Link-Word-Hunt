@@ -59,6 +59,7 @@ public class Solver {
      * Provides O(1) bucket lookup for fast prefix/word validation during search.
      */
     private static final List<List<List<List<String>>>> dictionary = new ArrayList<>();
+    private static final List<List<List<List<String>>>> commonDictionary = new ArrayList<>();
 
     // ===== Board State =====
     private static final List<List<Character>> board = new ArrayList<>();
@@ -152,6 +153,15 @@ public class Solver {
                     }
                 }
             }
+            for (int x = 0; x < ALPHABET_SIZE; x++) {
+                commonDictionary.add(new ArrayList<>());
+                for (int y = 0; y < ALPHABET_SIZE; y++) {
+                    commonDictionary.get(x).add(new ArrayList<>());
+                    for (int z = 0; z < ALPHABET_SIZE; z++) {
+                        commonDictionary.get(x).get(y).add(new ArrayList<>());
+                    }
+                }
+            }
             return;
         }
 
@@ -189,6 +199,42 @@ public class Solver {
         if (start < fileContent.length()) {
             addWordToDictionary(fileContent.substring(start).trim());
         }
+
+        String commonWords = Source.getAsset("CommonWords.txt").readString();
+
+        start = 0;
+
+        while ((end = commonWords.indexOf('\n', start)) != -1) {
+            addWordToCommonDictionary(commonWords.substring(start, end).trim());
+            start = end + 1;
+        }
+
+        // Last line (if no trailing newline)
+        if (start < commonWords.length()) {
+            addWordToCommonDictionary(commonWords.substring(start).trim());
+        }
+    }
+
+    public static boolean isCommon(String word){
+        int a = word.charAt(0) - ASCII_OFFSET;
+        int b = word.charAt(1) - ASCII_OFFSET;
+        int c = word.charAt(2) - ASCII_OFFSET;
+
+        return commonDictionary.get(a).get(b).get(c).contains(word);
+    }
+
+    private static void addWordToCommonDictionary(String word) {
+        if (word.length() < 3) return;
+
+        try {
+            int a = word.charAt(0) - ASCII_OFFSET;
+            int b = word.charAt(1) - ASCII_OFFSET;
+            int c = word.charAt(2) - ASCII_OFFSET;
+
+            commonDictionary.get(a).get(b).get(c).add(word);
+        } catch (Exception ignored) {
+            // Ignore words with invalid characters
+        }
     }
 
     /**
@@ -216,6 +262,10 @@ public class Solver {
         treasureWords.clear();
         wordPaths.clear();
         Arrays.fill(wordLengthCounts, 0);
+    }
+
+    public static List<List<List<List<String>>>> getCommonWords(){
+        return commonDictionary;
     }
 
     // ======================================================================

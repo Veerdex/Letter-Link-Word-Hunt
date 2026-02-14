@@ -59,6 +59,10 @@ public class Board extends Agent {
         HINT_START   // Starting tile of hint
     }
 
+    public enum WordState {
+        FOUND, MISSED, NOTFOUND
+    }
+
     // ========================================
     // STATIC GAME STATE
     // ========================================
@@ -166,6 +170,8 @@ public class Board extends Agent {
     public static void loadNewBoard() {
         boolean remakeTextures = width != Solver.getBoardWidth() ||
             height != Solver.getBoardHeight();
+
+        System.out.println(Solver.getTreasureWords());
 
         resetGameState();
         initializeTimers();

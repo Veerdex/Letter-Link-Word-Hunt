@@ -1,13 +1,13 @@
 package com.grantkoupal.letterlink;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.grantkoupal.letterlink.quantum.core.Agent;
-import com.grantkoupal.letterlink.quantum.core.Graphic;
-import com.grantkoupal.letterlink.quantum.core.Page;
+import com.grantkoupal.letterlink.quantum.core.*;
 
 /**
  * Displays the game results screen after completing a board.
@@ -53,13 +53,19 @@ public class FinishPage extends Page {
     private final GlyphLayout layout;
     private final Texture statBackgroundTexture;
     private final Texture backgroundTexture;
+    private final Texture moreTexture;
+    private final Texture finishTexture;
     private final Graphic statBackground;
+    private final Graphic moreButton;
+    private final Graphic finishButton;
 
     // Formatted display strings
     private final String time;
     private final String score;
     private final String boardValue;
     private final String rating;
+
+    private final DataDisplay dd;
 
     // ========================================
     // CONSTRUCTOR
@@ -77,14 +83,19 @@ public class FinishPage extends Page {
         // Initialize textures
         this.backgroundTexture = initializeBackgroundTexture();
         this.statBackgroundTexture = initializeStatBackgroundTexture();
+        this.moreTexture = DataManager.moreButtonTexture;
+        this.finishTexture = DataManager.finishButtonTexture;
         this.statBackground = new Graphic(statBackgroundTexture);
+        this.moreButton = new Graphic(moreTexture);
+        this.finishButton = new Graphic(finishTexture);
 
         // Initialize font
-        this.font = Source.generateFont(DataManager.fontName, 128);
+        this.font = Source.generateFont("Cinzel", 128);
         this.layout = new GlyphLayout();
 
         // Add display agent
-        add(new DataDisplay());
+        this.dd = new DataDisplay();
+        add(dd);
     }
 
     // ========================================
@@ -92,9 +103,7 @@ public class FinishPage extends Page {
     // ========================================
 
     private Texture initializeBackgroundTexture() {
-        Texture texture = DataManager.backgroundTexture;
-        texture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
-        return texture;
+        return DataManager.backgroundTexture;
     }
 
     private Texture initializeStatBackgroundTexture() {
@@ -114,7 +123,7 @@ public class FinishPage extends Page {
 
     @Override
     public void restart() {
-        // No restart behavior needed
+        add(dd);
     }
 
     @Override
@@ -241,10 +250,74 @@ public class FinishPage extends Page {
         private static final float LEFT_COLUMN_X = -650f;
         private static final float RIGHT_COLUMN_X = 650f;
 
-        private static final float LONGEST_WORD_MAX_WIDTH = 550f;
+        private static final float LONGEST_WORD_MAX_WIDTH = 500f;
         private static final float DECIMAL_PRECISION = 10f;
 
         private static final float GLOW_BRIGHTNESS = 1.25f;
+
+        private float moreButtonScale = 1;
+        private float finishButtonScale = 1;
+        private float scale = 1;
+        private float centerX = 0;
+        private float centerY = 0;
+        private boolean mouseDown = false;
+
+        public DataDisplay(){
+            addAnimation(new Animation(System.nanoTime(), Animation.INDEFINITE, new Action(){
+                @Override
+                public void run(float delta) {
+                    boolean click = false;
+                    if(Gdx.input.isButtonPressed(Input.Buttons.LEFT)){
+                        if(!mouseDown) {
+                            click = true;
+                            mouseDown = true;
+                        }
+                    } else {
+                        mouseDown = false;
+                    }
+                    float yPos = centerY * 2 - 300 * scale;
+                    if(Math.abs(Source.getScreenMouseX() - centerX) < 400 * scale && Math.abs(Source.getScreenMouseY() - yPos) < 150 * scale){
+                        if(click){
+                            moreButtonScale = 1;
+                            WordOverview wo = new WordOverview();
+                            Source.loadNewPage(wo);
+                        }
+                        if(!Manager.isOnDesktop()) return;
+                        if(moreButtonScale < 1.2) {
+                            moreButtonScale += delta * 2;
+                        } else {
+                            moreButtonScale = 1.2f;
+                        }
+                    } else {
+                        if(moreButtonScale > 1) {
+                            moreButtonScale -= delta * 2;
+                        } else {
+                            moreButtonScale = 1;
+                        }
+                    }
+                    yPos = 300 * scale;
+                    if(Math.abs(Source.getScreenMouseX() - centerX) < 400 * scale && Math.abs(Source.getScreenMouseY() - yPos) < 150 * scale){
+                        if(click){
+                            finishButtonScale = 1;
+                            MainMenu mm = new MainMenu();
+                            Source.loadNewPage(mm);
+                        }
+                        if(!Manager.isOnDesktop()) return;
+                        if(finishButtonScale < 1.2) {
+                            finishButtonScale += delta * 2;
+                        } else {
+                            finishButtonScale = 1.2f;
+                        }
+                    } else {
+                        if(finishButtonScale > 1) {
+                            finishButtonScale -= delta * 2;
+                        } else {
+                            finishButtonScale = 1;
+                        }
+                    }
+                }
+            }));
+        }
 
         // ========== Stat Row Positions ==========
 
@@ -266,17 +339,19 @@ public class FinishPage extends Page {
 
         @Override
         public void draw(ShapeRenderer sr, SpriteBatch sb) {
-            float scale = calculateScale();
-            float centerX = Source.getScreenWidth() / 2f;
-            float centerY = Source.getScreenHeight() / 2f;
+            scale = calculateScale();
+            centerX = Source.getScreenWidth() / 2f;
+            centerY = Source.getScreenHeight() / 2f;
 
             sb.begin();
             sb.setProjectionMatrix(Source.camera.combined);
 
-            drawBackgrounds(sb, scale, centerX, centerY);
-            drawTitle(sb, scale, centerX, centerY);
-            drawScoreWithGlow(sb, scale, centerX, centerY);
-            drawStatistics(sb, scale, centerX, centerY);
+            drawBackgrounds(sb);
+            drawTitle(sb);
+            drawScoreWithGlow(sb);
+            drawStatistics(sb);
+            drawMoreButton(sb);
+            drawFinishButton(sb);
 
             sb.end();
         }
@@ -291,7 +366,19 @@ public class FinishPage extends Page {
 
         // ========== Background Drawing ==========
 
-        private void drawBackgrounds(SpriteBatch sb, float scale, float centerX, float centerY) {
+        private void drawMoreButton(SpriteBatch sb){
+            moreButton.setCenter(centerX, centerY * 2 - 300 * scale);
+            moreButton.setScale(300 * scale / moreTexture.getHeight() * moreButtonScale);
+            moreButton.draw(sb);
+        }
+
+        private void drawFinishButton(SpriteBatch sb){
+            finishButton.setCenter(centerX, 300 * scale);
+            finishButton.setScale(300 * scale / finishButton.getHeight() * finishButtonScale);
+            finishButton.draw(sb);
+        }
+
+        private void drawBackgrounds(SpriteBatch sb) {
             // Draw tiled background
             sb.setColor(0.5f, 0.5f, 0.5f, 1);
             sb.draw(backgroundTexture,
@@ -311,7 +398,7 @@ public class FinishPage extends Page {
 
         // ========== Title Drawing ==========
 
-        private void drawTitle(SpriteBatch sb, float scale, float centerX, float centerY) {
+        private void drawTitle(SpriteBatch sb) {
             font.getData().setScale(scale * TITLE_FONT_SCALE);
             layout.setText(font, "Score");
 
@@ -324,7 +411,7 @@ public class FinishPage extends Page {
 
         // ========== Score Drawing ==========
 
-        private void drawScoreWithGlow(SpriteBatch sb, float scale, float centerX, float centerY) {
+        private void drawScoreWithGlow(SpriteBatch sb) {
             font.getData().setScale(scale * SCORE_FONT_SCALE);
             layout.setText(font, score);
 
@@ -338,34 +425,33 @@ public class FinishPage extends Page {
 
         // ========== Statistics Drawing ==========
 
-        private void drawStatistics(SpriteBatch sb, float scale, float centerX, float centerY) {
+        private void drawStatistics(SpriteBatch sb) {
             font.getData().setScale(scale * STAT_FONT_SCALE);
 
             // Draw all stat values (right column)
-            drawStatValue(sb, scale, centerX, centerY, 0, rating);
-            drawStatValue(sb, scale, centerX, centerY, 1, boardValue);
-            drawStatValue(sb, scale, centerX, centerY, 2, String.valueOf(results.totalWords));
-            drawLongestWordStat(sb, scale, centerX, centerY);
-            drawStatValue(sb, scale, centerX, centerY, 4, formatDecimal(results.averageWordLength));
-            drawStatValue(sb, scale, centerX, centerY, 5, formatDecimal(results.wordsPerSecond));
-            drawStatValue(sb, scale, centerX, centerY, 6, formatDecimal(results.pointsPerSecond));
-            drawStatValue(sb, scale, centerX, centerY, 7, time);
-            drawStatValue(sb, scale, centerX, centerY, 8, String.valueOf(results.hintsUsed));
+            drawStatValue(sb, 0, rating);
+            drawStatValue(sb, 1, boardValue);
+            drawStatValue(sb, 2, String.valueOf(results.totalWords));
+            drawLongestWordStat(sb);
+            drawStatValue(sb, 4, formatDecimal(results.averageWordLength));
+            drawStatValue(sb, 5, formatDecimal(results.wordsPerSecond));
+            drawStatValue(sb, 6, formatDecimal(results.pointsPerSecond));
+            drawStatValue(sb, 7, time);
+            drawStatValue(sb, 8, String.valueOf(results.hintsUsed));
 
             // Reset shader and draw labels (left column)
             sb.setShader(null);
-            drawStatLabels(sb, scale, centerX, centerY);
+            drawStatLabels(sb);
         }
 
-        private void drawStatValue(SpriteBatch sb, float scale, float centerX,
-                                   float centerY, int rowIndex, String value) {
+        private void drawStatValue(SpriteBatch sb, int rowIndex, String value) {
             layout.setText(font, value);
             float x = centerX + RIGHT_COLUMN_X * scale - layout.width;
             float y = centerY + STAT_ROWS[rowIndex].yOffset * scale;
             font.draw(sb, value, x, y);
         }
 
-        private void drawLongestWordStat(SpriteBatch sb, float scale, float centerX, float centerY) {
+        private void drawLongestWordStat(SpriteBatch sb) {
             String longestWord = results.longestWord;
             font.getData().setScale(scale * STAT_FONT_SCALE);
             layout.setText(font, longestWord);
@@ -386,7 +472,7 @@ public class FinishPage extends Page {
             font.getData().setScale(scale * STAT_FONT_SCALE);
         }
 
-        private void drawStatLabels(SpriteBatch sb, float scale, float centerX, float centerY) {
+        private void drawStatLabels(SpriteBatch sb) {
             float x = centerX + LEFT_COLUMN_X * scale;
 
             for (StatRow row : STAT_ROWS) {

@@ -1,3 +1,9 @@
 Coiny Regular — © 2015 Marcelo Magalhaes
 Licensed under the SIL Open Font License, Version 1.1
 Full license text included in OFL.txt (or link to http://scripts.sil.org/OFL)
+
+Copyright 2020 The Cinzel Project Authors (https://github.com/NDISCOVER/Cinzel)
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+This license is copied below, and is also available with a FAQ at:
+https://openfontlicense.org

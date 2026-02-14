@@ -17,6 +17,11 @@ public class DataManager {
     private static final String BOARD_PATH = "/Board.png";
     private static final String BACKGROUND_PATH = "/GameBackground.png";
     private static final String BOTTOM_TEXT_PATH = "/TextBackground.png";
+    private static final String MORE_PATH = "/More.png";
+    private static final String SETTINGS_PATH = "/Settings.png";
+    private static final String FINISH_PATH = "/Finish.png";
+    private static final String RESUME_PATH = "/Resume.png";
+    private static final String BACK_PATH = "/Back.png";
     private static final String ICON_PATH = "Icons/";
     private static final String DATA_PATH = "/data.txt";
 
@@ -29,12 +34,17 @@ public class DataManager {
     protected static Texture bottomTextTexture = null;
     protected static float bottomTextScale = 1;
     protected static Texture iconTexture = null;
+    protected static Texture backButtonTexture = null;
+    protected static Texture finishButtonTexture = null;
+    protected static Texture moreButtonTexture = null;
+    protected static Texture resumeButtonTexture = null;
+    protected static Texture settingsButtonTexture = null;
+
 
     protected static Color chainColor = new Color(1, 0, 0, .25f);
     protected static Color tileTextColor = new Color(1, 1, 1, 1f);
     protected static boolean tileTextOutline = true;
     protected static Color menuColor = new Color(1, 1, 1, .25f);
-    protected static String menuButtonColor = "Blue";
 
     // ========== Font ==========
     protected static String fontName;
@@ -64,14 +74,41 @@ public class DataManager {
         updateTraceColor(scan.nextLine());
         updateTileLetterColor(scan.nextLine());
         updateMenuColor(scan.nextLine());
-        updateMenuButtonColor(scan.nextLine());
+        updateButtonTextures();
         scan.close();
     }
 
-    private static void updateMenuButtonColor(String line){
-        Scanner scan = new Scanner(line);
-        menuButtonColor = scan.next();
-        scan.close();
+    private static void updateButtonTextures(){
+        if(settingsButtonTexture != null){
+            settingsButtonTexture.dispose();
+        }
+
+        if(moreButtonTexture != null){
+            moreButtonTexture.dispose();
+        }
+
+        if(resumeButtonTexture != null){
+            resumeButtonTexture.dispose();
+        }
+
+        if(backButtonTexture != null){
+            backgroundTexture.dispose();
+        }
+
+        if(finishButtonTexture != null){
+            finishButtonTexture.dispose();
+        }
+
+        settingsButtonTexture = new Texture(Source.getAsset(THEME_PATH + ThemeManager.currentTheme + SETTINGS_PATH));
+        settingsButtonTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        moreButtonTexture = new Texture(Source.getAsset(THEME_PATH + ThemeManager.currentTheme + MORE_PATH));
+        moreButtonTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        resumeButtonTexture = new Texture(Source.getAsset(THEME_PATH + ThemeManager.currentTheme + RESUME_PATH));
+        resumeButtonTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        backButtonTexture = new Texture(Source.getAsset(THEME_PATH + ThemeManager.currentTheme + BACK_PATH));
+        backButtonTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        finishButtonTexture = new Texture(Source.getAsset(THEME_PATH + ThemeManager.currentTheme + FINISH_PATH));
+        finishButtonTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
     }
 
     private static void updateMenuColor(String line){
@@ -172,6 +209,21 @@ public class DataManager {
         }
         if (bottomTextTexture != null) {
             bottomTextTexture.dispose();
+        }
+        if(finishButtonTexture != null){
+            finishButtonTexture.dispose();
+        }
+        if(backButtonTexture != null){
+            backButtonTexture.dispose();
+        }
+        if(settingsButtonTexture != null){
+            settingsButtonTexture.dispose();
+        }
+        if(resumeButtonTexture != null){
+            resumeButtonTexture.dispose();
+        }
+        if(moreButtonTexture != null){
+            moreButtonTexture.dispose();
         }
     }
 }

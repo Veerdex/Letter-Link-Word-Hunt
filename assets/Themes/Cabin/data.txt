@@ -3,4 +3,3 @@ Coiny - Font Name
 255 0 0 - Trace Color
 255 255 255 255 - Tile Text Color
 255 255 255 - Menu Color
-Blue - Menu Button Color (Red, Orange, Green, Blue)

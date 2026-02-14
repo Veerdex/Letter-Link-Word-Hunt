@@ -40,7 +40,7 @@ public class PracticeMenu extends Agent {
     private float finishScale = 1f;
 
     public PracticeMenu() {
-        instantiateTextures(DataManager.menuButtonColor);
+        instantiateTextures();
 
         RESUME = new Graphic(resumeTexture);
         SETTINGS = new Graphic(settingsTexture);
@@ -66,6 +66,7 @@ public class PracticeMenu extends Agent {
                 float resumeY = centerY + BUTTON_CENTER_OFFSET_Y * scale;
                 if (isHovering(mouseX, mouseY, centerX, resumeY)) {
                     if (click) executeResume();
+                    if(!Manager.isOnDesktop()) return;
                     resumeScale = approach(resumeScale, HOVER_MAX_SCALE, delta);
                 } else {
                     resumeScale = approach(resumeScale, 1f, delta);
@@ -76,6 +77,7 @@ public class PracticeMenu extends Agent {
                 float settingsY = centerY;
                 if (isHovering(mouseX, mouseY, centerX, settingsY)) {
                     if (click) executeSettings();
+                    if(!Manager.isOnDesktop()) return;
                     settingsScale = approach(settingsScale, HOVER_MAX_SCALE, delta);
                 } else {
                     settingsScale = approach(settingsScale, 1f, delta);
@@ -86,6 +88,7 @@ public class PracticeMenu extends Agent {
                 float finishY = centerY - BUTTON_CENTER_OFFSET_Y * scale;
                 if (isHovering(mouseX, mouseY, centerX, finishY)) {
                     if (click) executeFinish();
+                    if(!Manager.isOnDesktop()) return;
                     finishScale = approach(finishScale, HOVER_MAX_SCALE, delta);
                 } else {
                     finishScale = approach(finishScale, 1f, delta);
@@ -180,15 +183,12 @@ public class PracticeMenu extends Agent {
 
     // ===== Assets =====
 
-    private void instantiateTextures(String color) {
-        resumeTexture = new Texture(Source.getAsset("Menu/" + color + " Resume.png"));
-        resumeTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+    private void instantiateTextures() {
+        resumeTexture = DataManager.resumeButtonTexture;
 
-        settingsTexture = new Texture(Source.getAsset("Menu/" + color + " Settings.png"));
-        settingsTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        settingsTexture = DataManager.settingsButtonTexture;
 
-        finishTexture = new Texture(Source.getAsset("Menu/" + color + " Finish.png"));
-        finishTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        finishTexture = DataManager.finishButtonTexture;
     }
 
     // ===== Draw =====
@@ -233,8 +233,5 @@ public class PracticeMenu extends Agent {
 
     @Override
     public void dispose() {
-        resumeTexture.dispose();
-        settingsTexture.dispose();
-        finishTexture.dispose();
     }
 }

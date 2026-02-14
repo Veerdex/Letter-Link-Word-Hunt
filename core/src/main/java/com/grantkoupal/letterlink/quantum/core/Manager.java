@@ -394,15 +394,16 @@ public abstract class Manager extends ApplicationAdapter {
             removeRenderer(currentPage.renderer);
             currentPage.removeAgentsFromStage();
         }
-        if (queue[2] != null)
+        if (queue[2] != null) {
             queue[2].delete();
+        }
         queue[2] = queue[1];
         queue[1] = queue[0];
         queue[0] = currentPage;
 
         currentPage = p;
 
-        addRenderer(p.renderer);
+        addRenderer(currentPage.renderer);
     }
 
     /**

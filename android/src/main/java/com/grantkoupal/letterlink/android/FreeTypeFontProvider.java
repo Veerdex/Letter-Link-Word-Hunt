@@ -4,7 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.utils.ObjectMap;
-import com.grantkoupal.letterlink.quantum.FontProvider;
+import com.grantkoupal.letterlink.quantum.font.FontProvider;
 
 public class FreeTypeFontProvider implements FontProvider {
     private ObjectMap<String, FreeTypeFontGenerator> generators;

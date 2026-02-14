@@ -163,6 +163,5 @@ public class PracticePage extends Page {
         menuDisplay.dispose();
         practiceMenu.dispose();
         settings.dispose();
-        DataManager.dispose();
     }
 }
