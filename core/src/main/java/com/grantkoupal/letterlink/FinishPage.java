@@ -141,8 +141,11 @@ public class FinishPage extends Page {
      */
     private String calculateLetterGrade(BoardResult results) {
         float timeBonusMultiplier = calculateTimeBonusMultiplier(results.timeSeconds);
-        float adjustedTarget = results.SRankScore / timeBonusMultiplier;
-        float percentage = (results.score / adjustedTarget) * 100f;
+        float adjustedTarget = results.predictedScore / timeBonusMultiplier;
+        float percentage = (results.rankScore / adjustedTarget) * 100f;
+        System.out.println("RankScore: " + results.rankScore);
+        System.out.println("Predicted Score: " + results.predictedScore);
+        System.out.println("Time Bonus Multiplier: " + timeBonusMultiplier);
 
         return getLetterGradeFromPercentage(percentage);
     }

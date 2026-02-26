@@ -1,8 +1,8 @@
 package com.grantkoupal.letterlink;
 
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.grantkoupal.letterlink.quantum.font.FontProvider;
 import com.grantkoupal.letterlink.quantum.core.Manager;
+import com.grantkoupal.letterlink.quantum.font.FontProvider;
 
 public class Source extends Manager {
 
@@ -17,18 +17,25 @@ public class Source extends Manager {
 
         loadAssets();
 
+        RankHandler.loadTextures();
+
+        //MainMenu mm = new MainMenu();
+        //loadNewPage(mm);
+
         LoadingBoardPage loadingPage = new LoadingBoardPage();
 
         loadNewPage(loadingPage);
+
+        //Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
     }
 
     /**
      * Loads game textures and fonts.
      */
     private void loadAssets() {
-        ThemeManager.setCurrentTheme("Volcano");
+        ThemeManager.setCurrentTheme("Cabin");
         DataManager.setIcon("Checkmarks.png");
-        DataManager.setUserName("Veerdex");
+        DataManager.setUserName("LordMinion777");
     }
 
     public static BitmapFont generateFont(String path, int size){

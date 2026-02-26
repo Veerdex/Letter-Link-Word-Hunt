@@ -49,6 +49,8 @@ public class LoadingAnimation extends Agent {
 
     @Override
     public void draw(ShapeRenderer sr, SpriteBatch sb) {
+        x = Source.getScreenWidth() / 2f;
+        y = Source.getScreenHeight() / 2f;
         float yScale = Source.getScreenHeight() / 3000f;
         float xScale = Source.getScreenWidth() / 1500f;
         scale = Math.min(xScale, yScale) * 3f;

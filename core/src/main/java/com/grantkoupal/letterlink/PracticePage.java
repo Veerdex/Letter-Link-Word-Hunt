@@ -30,7 +30,7 @@ public class PracticePage extends Page {
         initBoard();
         add(board);
 
-        computeAndSetSRankScore();
+        computePredictedScore();
 
         createUIComponents();
         setupResizeHandler();
@@ -61,7 +61,7 @@ public class PracticePage extends Page {
      * Calculates a target score (S-rank score) based on a subset of easier words.
      * Original behavior preserved (same math + loop structure).
      */
-    private void computeAndSetSRankScore() {
+    private void computePredictedScore() {
         List<String> words = Board.getWordsInBoard();
 
         int total;
@@ -74,8 +74,8 @@ public class PracticePage extends Page {
             total = 80;
         }
 
-        float predictedScore = 0;
-        float totalPossibleScore = 0; // kept (even if unused) to preserve structure/intent
+        int predictedScore = 0;
+        int totalPossibleScore = 0; // kept (even if unused) to preserve structure/intent
         int count = 0;
 
         main:
@@ -97,16 +97,16 @@ public class PracticePage extends Page {
             totalPossibleScore += Solver.getWordValue(word);
         }
 
-        board.setSRankScore((int) predictedScore);
+        Board.setPredictedScore(predictedScore);
     }
 
     private void createUIComponents() {
         // Left side: all possible words (hidden until found)
-        hintTable = new HintTable(board.getWordsInBoard(), board.getWordsFound());
+        hintTable = new HintTable(Board.getWordsInBoard(), Board.getWordsFound());
         add(hintTable);
 
         // Right side: words the player has found
-        guessTable = new GuessTable(board.getListOfWordsFound());
+        guessTable = new GuessTable(Board.getListOfWordsFound());
         add(guessTable);
 
         // Current letter chain being traced
@@ -140,7 +140,7 @@ public class PracticePage extends Page {
                     Source.getScreenHeight(),
                     false
                 );
-                board.updateFrameBuffer(newFb);
+                Board.updateFrameBuffer(newFb);
                 return true;
             }
         });

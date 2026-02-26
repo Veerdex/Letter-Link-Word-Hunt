@@ -33,12 +33,12 @@ public class LoadingBoardPage extends Page {
     }
 
     private void startLoadingThread() {
-        loadingThread = new Thread() {
+        loadingThread = (Thread) new Thread() {
             @Override
             public void run() {
                 try {
                     // This is where the heavy loading happens
-                    ImprovedBoardGenerator.generateBoard(4, 4, 4);
+                    ImprovedBoardGenerator.generateBoard(4, 5, 4);
 
                     // Mark as complete
                     loadingComplete = true;

@@ -135,7 +135,11 @@ public class GuessTable extends Agent {
      */
     private void updateScrollMotion() {
         if (Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
-            scrollMotion = Gdx.input.getDeltaY();
+            if(Source.isOnDesktop()) {
+                scrollMotion = Gdx.input.getDeltaY() * 10;
+            } else {
+                scrollMotion = Gdx.input.getDeltaY();
+            }
         }
     }
 

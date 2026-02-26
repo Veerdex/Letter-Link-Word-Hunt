@@ -97,7 +97,7 @@ public class Solver {
         for (int x = 0; x < width; x++) {
             newBoard.add(new ArrayList<>());
             for (int y = 0; y < height; y++) {
-                newBoard.get(x).add(letters.charAt(x * width + y));
+                newBoard.get(x).add(letters.charAt(x * height + y)); // ← height, not width
             }
         }
 

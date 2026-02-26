@@ -51,7 +51,13 @@ public class DataManager {
 
     // ========== User Info ==========
     protected static String userName = null;
-    protected static int rank = 1000;
+    protected static float rank = 1050;
+
+    public enum Gamemode {PRACTICE, COMPETITIVE, CASUAL};
+    public static Gamemode currentGamemode = Gamemode.PRACTICE;
+
+    public enum BoardLayout {_4x4, _5x5, _4x5, _5x4};
+    public static BoardLayout currentLayout = BoardLayout._5x5;
 
     protected static boolean vibration = false;
     protected static boolean sound = false;

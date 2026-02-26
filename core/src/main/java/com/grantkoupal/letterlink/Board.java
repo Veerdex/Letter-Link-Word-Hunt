@@ -41,7 +41,7 @@ public class Board extends Agent {
 
     // Timing constants
     private static final int RANK_CALCULATION_CUTOFF = 121000;
-    private static final int RANK_CALCULATION_FREQUENCY = 5000;
+    private static final int RANK_CALCULATION_FREQUENCY = 2500;
 
     // ========================================
     // ENUMS
@@ -79,7 +79,6 @@ public class Board extends Agent {
     public static int boardValue = 0;
     public static int totalPoints = 0;
     public static float currentRank = 0;
-    public static int SRankScore = 0;
 
     // Timing
     private static long startTime = 0;
@@ -89,6 +88,7 @@ public class Board extends Agent {
     // Hints
     private static int hintsUsed = 0;
     private static int finalScore = 0;
+    private static int predictedScore = 0;
 
     // UI state
     public static boolean menuOpen = false;
@@ -170,8 +170,6 @@ public class Board extends Agent {
     public static void loadNewBoard() {
         boolean remakeTextures = width != Solver.getBoardWidth() ||
             height != Solver.getBoardHeight();
-
-        System.out.println(Solver.getTreasureWords());
 
         resetGameState();
         initializeTimers();
@@ -344,6 +342,9 @@ public class Board extends Agent {
             totalPoints += Solver.getWordValue(word);
             wordsLeft.remove(word);
             lastGuess = System.currentTimeMillis();
+            if(System.currentTimeMillis() - startTime <= 120000){
+                finalScore = totalPoints;
+            }
             return true;
         }
         return false;
@@ -578,8 +579,12 @@ public class Board extends Agent {
         return System.currentTimeMillis() - startTime;
     }
 
-    public static int getSRankScore() {
-        return SRankScore;
+    public static int getFinalScore() {
+        return finalScore;
+    }
+
+    public static int getPredictedSccore(){
+        return predictedScore;
     }
 
     // ========================================
@@ -599,8 +604,8 @@ public class Board extends Agent {
         Board.boardY = y;
     }
 
-    public static void setSRankScore(int score) {
-        SRankScore = score;
+    public static void setPredictedScore(int p){
+        predictedScore = p;
     }
 
     /**
@@ -646,9 +651,6 @@ public class Board extends Agent {
                 @Override
                 public void run() {
                     currentRank = (float)Math.pow(Solver.calculateRank(listOfWordsFound), 1.25f);
-                    if (time > RANK_CALCULATION_CUTOFF - RANK_CALCULATION_FREQUENCY) {
-                        finalScore = totalPoints;
-                    }
                 }
             }).start();
         }

@@ -113,13 +113,14 @@ public class PracticeMenu extends Agent {
     private void executeFinish() {
         BoardResult results = new BoardResult();
         results.score = Board.getTotalPoints();
+        results.rankScore = Board.getFinalScore();
         results.hintsUsed = Board.getHintsUsed();
         results.boardValue = Board.getBoardValue();
         results.longestWord = Board.getLongestWord().toUpperCase();
         results.totalWords = Board.getListOfWordsFound().size();
         results.userRank = Board.getCurrentRank();
         results.timeSeconds = Board.getGameDuration() / 1000;
-        results.SRankScore = Board.SRankScore;
+        results.predictedScore = Board.getPredictedSccore();
 
         List<String> wordsFound = Board.getListOfWordsFound();
         int totalLetters = 0;

@@ -5,11 +5,12 @@ public class BoardResult {
     public float userRank;
     public float boardValue;
     public int score;
+    public int rankScore;
+    public int predictedScore;
     public int hintsUsed;
     public String longestWord;
     public float averageWordLength;
     public int totalWords;
     public float wordsPerSecond;
     public float pointsPerSecond;
-    public int SRankScore;
 }
