@@ -1,6 +1,7 @@
 package com.grantkoupal.letterlink;
 
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.grantkoupal.letterlink.backend.BackendHandler;
 import com.grantkoupal.letterlink.quantum.core.Manager;
 import com.grantkoupal.letterlink.quantum.font.FontProvider;
 
@@ -19,12 +20,21 @@ public class Source extends Manager {
 
         RankHandler.loadTextures();
 
-        //MainMenu mm = new MainMenu();
-        //loadNewPage(mm);
+        BackendHandler.startUp(new BackendHandler.StartupCallback() {
+            @Override
+            public void onSuccess() {
+                MainMenu mm = new MainMenu();
+                loadNewPage(mm);
+            }
 
-        LoadingBoardPage loadingPage = new LoadingBoardPage();
+            @Override
+            public void onFailure(Throwable t) {
+                t.printStackTrace();
+            }
+        });
 
-        loadNewPage(loadingPage);
+        //LoadingBoardPage loadingPage = new LoadingBoardPage();
+        //loadNewPage(loadingPage);
 
         //Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
     }

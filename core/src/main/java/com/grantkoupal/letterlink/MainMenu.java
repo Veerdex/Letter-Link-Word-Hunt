@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.grantkoupal.letterlink.backend.data.SessionData;
 import com.grantkoupal.letterlink.quantum.core.*;
 import com.grantkoupal.letterlink.quantum.core.Process;
 import com.grantkoupal.letterlink.quantum.paint.Textures;
@@ -231,8 +232,8 @@ public class MainMenu extends Page {
 
             if(isHover(gamemodeX, gamemodeY, 950 * scale, 200 * scale)){
                 if(click){
-                    GamemodeSelection gs = new GamemodeSelection();
-                    Source.loadNewPage(gs);
+                    //GamemodeSelection gs = new GamemodeSelection();
+                    //Source.loadNewPage(gs);
                 }
                 if(gamemodeScale < 1.1f) {
                     gamemodeScale += delta * 2;
@@ -333,9 +334,9 @@ public class MainMenu extends Page {
             drawBoard(sb);
             drawEmblem(sb);
             Color c;
-            switch(DataManager.currentGamemode){
-                case CASUAL:c = Color.GREEN; break;
-                case COMPETITIVE:c = Color.RED; break;
+            switch(SessionData.currentGamemode){
+                case "casual" :c = Color.GREEN; break;
+                case "competitive" :c = Color.RED; break;
                 default:c = Color.CYAN;
             }
             sb.setColor(c);
@@ -345,10 +346,9 @@ public class MainMenu extends Page {
 
         private void drawText(SpriteBatch sb){
             String text;
-            switch(DataManager.currentLayout){
-                case _4x4:text = "4x4"; break;
-                case _4x5:text = "4x5"; break;
-                case _5x4:text = "5x4"; break;
+            switch(SessionData.currentBoardHeight + SessionData.currentBoardWidth){
+                case 8 :text = "4x4"; break;
+                case 9 :text = "4x5"; break;
                 default:text = "5x5";
             }
             font.getData().setScale(scale * 1.4f);
@@ -359,10 +359,9 @@ public class MainMenu extends Page {
 
         private void drawBoard(SpriteBatch sb){
             Texture temp;
-            switch(DataManager.currentLayout){
-                case _4x4:temp = board_4x4; break;
-                case _4x5:temp = board_4x5; break;
-                case _5x4:temp = board_5x4; break;
+            switch(SessionData.currentBoardWidth + SessionData.currentBoardHeight){
+                case 8 :temp = board_4x4; break;
+                case 9 :temp = board_4x5; break;
                 default:temp = board_5x5; break;
             }
             sb.draw(temp, centerX - 400 * scale, centerY - 425 * scale, 800 * scale, 800 * scale);
@@ -370,9 +369,9 @@ public class MainMenu extends Page {
 
         private void drawEmblem(SpriteBatch sb){
             Texture temp;
-            switch(DataManager.currentGamemode){
-                case PRACTICE:temp = practice; break;
-                case COMPETITIVE:temp = competitive; break;
+            switch(SessionData.currentGamemode){
+                case "practice" :temp = practice; break;
+                case "competitive" :temp = competitive; break;
                 default : temp = casual;
             }
             sb.draw(temp, centerX - 65.5f * scale, centerY - 416.5f * scale - 65 * scale, 130 * scale, 130 * scale);

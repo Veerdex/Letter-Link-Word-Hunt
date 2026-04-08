@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.grantkoupal.letterlink.backend.data.SessionData;
 import com.grantkoupal.letterlink.quantum.core.Agent;
 import com.grantkoupal.letterlink.quantum.core.Graphic;
 
@@ -103,9 +104,9 @@ public class Settings extends Agent {
         drawLabels(sb, centerX, scale, musicY, soundY, vibrationY);
         drawCloseX(sb, scale, xCenterX, xCenterY);
 
-        drawToggle(sb, DataManager.music, alignX, musicY, scale);
-        drawToggle(sb, DataManager.sound, alignX, soundY, scale);
-        drawToggle(sb, DataManager.vibration, alignX, vibrationY, scale);
+        drawToggle(sb, SessionData.musicEnabled, alignX, musicY, scale);
+        drawToggle(sb, SessionData.sfxEnabled, alignX, soundY, scale);
+        drawToggle(sb, SessionData.vibrationEnabled, alignX, vibrationY, scale);
 
         if (click) {
             handleClick(
@@ -188,11 +189,11 @@ public class Settings extends Agent {
         // Toggle switches
         if (Math.abs(mouseX - alignX) < SWITCH_CLICK_HALF_WIDTH * scale) {
             if (Math.abs(mouseY - musicY) < SWITCH_CLICK_HALF_HEIGHT * scale) {
-                DataManager.music = !DataManager.music;
+                SessionData.musicEnabled = !SessionData.musicEnabled;
             } else if (Math.abs(mouseY - soundY) < SWITCH_CLICK_HALF_HEIGHT * scale) {
-                DataManager.sound = !DataManager.sound;
+                SessionData.sfxEnabled = !SessionData.sfxEnabled;
             } else if (Math.abs(mouseY - vibrationY) < SWITCH_CLICK_HALF_HEIGHT * scale) {
-                DataManager.vibration = !DataManager.vibration;
+                SessionData.vibrationEnabled = !SessionData.vibrationEnabled;
             }
         }
 
