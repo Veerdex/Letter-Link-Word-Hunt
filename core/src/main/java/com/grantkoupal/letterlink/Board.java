@@ -213,8 +213,8 @@ public class Board extends Agent {
         }
 
         fb = new FrameBuffer(Pixmap.Format.RGBA8888,
-            Source.getScreenWidth(),
-            Source.getScreenHeight(),
+            width,
+            height,
             false);
     }
 

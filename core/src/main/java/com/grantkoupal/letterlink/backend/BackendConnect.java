@@ -16,8 +16,6 @@ import java.net.URLEncoder;
 public class BackendConnect {
 
     private static final String BASE_URL = "https://letter-link-backend-production.up.railway.app";
-    private static final String HEADER_PLAYER_ID = "X-Player-Id";
-    private static final String HEADER_PLAYER_TOKEN = "X-Player-Token";
 
     private interface BaseCallback<T> {
         void onSuccess(T value);
@@ -50,7 +48,7 @@ public class BackendConnect {
         System.out.println("REGISTER URL: " + url);
         System.out.println("REGISTER BODY: " + body);
 
-        HttpRequest request = buildPostRequest(url, body);
+        HttpRequest request = buildPostRequest(url, body, false);
         sendRequest("REGISTER", request, callback, new ResponseParser<RegisterResponse>() {
             @Override
             public RegisterResponse parse(String jsonText) {
@@ -66,7 +64,7 @@ public class BackendConnect {
         System.out.println("BOOTSTRAP SESSION URL: " + url);
         System.out.println("BOOTSTRAP SESSION BODY: " + body);
 
-        HttpRequest request = buildPostRequest(url, body);
+        HttpRequest request = buildPostRequest(url, body, false);
         sendRequest("BOOTSTRAP SESSION", request, callback, new ResponseParser<PlayerData>() {
             @Override
             public PlayerData parse(String jsonText) {
@@ -79,9 +77,11 @@ public class BackendConnect {
         String url = BASE_URL + "/players/get?id=" + encode(playerId);
 
         System.out.println("GET PLAYER URL: " + url);
-        debugAuth("GET PLAYER", SessionData.id, SessionData.authToken);
+        System.out.println("GET PLAYER AUTH PLAYER ID: " + SessionData.id);
+        System.out.println("GET PLAYER AUTH TOKEN PRESENT: " + (SessionData.authToken != null && !SessionData.authToken.trim().isEmpty()));
+        System.out.println("GET PLAYER AUTH TOKEN PREVIEW: " + previewToken(SessionData.authToken));
 
-        HttpRequest request = buildAuthenticatedGetRequest(url, SessionData.id, SessionData.authToken);
+        HttpRequest request = buildGetRequest(url, true);
         sendRequest("GET PLAYER", request, callback, new ResponseParser<PlayerData>() {
             @Override
             public PlayerData parse(String jsonText) {
@@ -94,9 +94,8 @@ public class BackendConnect {
         String url = BASE_URL + "/players/by-username?username=" + encode(username);
 
         System.out.println("GET PLAYER BY USERNAME URL: " + url);
-        debugAuth("GET PLAYER BY USERNAME", SessionData.id, SessionData.authToken);
 
-        HttpRequest request = buildAuthenticatedGetRequest(url, SessionData.id, SessionData.authToken);
+        HttpRequest request = buildGetRequest(url, true);
         sendRequest("GET PLAYER BY USERNAME", request, callback, new ResponseParser<PlayerData>() {
             @Override
             public PlayerData parse(String jsonText) {
@@ -111,6 +110,7 @@ public class BackendConnect {
         boolean sfxEnabled,
         boolean vibrationEnabled,
         String theme,
+        String mode,
         String currentGamemode,
         int currentBoardWidth,
         int currentBoardHeight,
@@ -118,11 +118,12 @@ public class BackendConnect {
     ) {
         String url = BASE_URL + "/players/update-settings";
         String body = "{"
-            + "\"id\":\"" + escapeJson(playerId) + "\"," 
+            + "\"id\":\"" + escapeJson(playerId) + "\","
             + "\"musicEnabled\":" + musicEnabled + ","
             + "\"sfxEnabled\":" + sfxEnabled + ","
             + "\"vibrationEnabled\":" + vibrationEnabled + ","
             + "\"theme\":\"" + escapeJson(theme) + "\","
+            + "\"mode\":\"" + escapeJson(mode) + "\","
             + "\"currentGamemode\":\"" + escapeJson(currentGamemode) + "\","
             + "\"currentBoardWidth\":" + currentBoardWidth + ","
             + "\"currentBoardHeight\":" + currentBoardHeight
@@ -130,9 +131,8 @@ public class BackendConnect {
 
         System.out.println("UPDATE SETTINGS URL: " + url);
         System.out.println("UPDATE SETTINGS BODY: " + body);
-        debugAuth("UPDATE SETTINGS", SessionData.id, SessionData.authToken);
 
-        HttpRequest request = buildAuthenticatedPostRequest(url, body, SessionData.id, SessionData.authToken);
+        HttpRequest request = buildPostRequest(url, body, true);
         sendRequest("UPDATE SETTINGS", request, callback, new ResponseParser<UpdateSettingsResponse>() {
             @Override
             public UpdateSettingsResponse parse(String jsonText) {
@@ -156,9 +156,8 @@ public class BackendConnect {
 
         System.out.println("UPDATE STATS URL: " + url);
         System.out.println("UPDATE STATS BODY: " + body);
-        debugAuth("UPDATE STATS", SessionData.id, SessionData.authToken);
 
-        HttpRequest request = buildAuthenticatedPostRequest(url, body, SessionData.id, SessionData.authToken);
+        HttpRequest request = buildPostRequest(url, body, true);
         sendRequest("UPDATE STATS", request, callback, new ResponseParser<UpdateStatsResponse>() {
             @Override
             public UpdateStatsResponse parse(String jsonText) {
@@ -182,9 +181,8 @@ public class BackendConnect {
 
         System.out.println("UPDATE MMR URL: " + url);
         System.out.println("UPDATE MMR BODY: " + body);
-        debugAuth("UPDATE MMR", SessionData.id, SessionData.authToken);
 
-        HttpRequest request = buildAuthenticatedPostRequest(url, body, SessionData.id, SessionData.authToken);
+        HttpRequest request = buildPostRequest(url, body, true);
         sendRequest("UPDATE MMR", request, callback, new ResponseParser<UpdateMmrResponse>() {
             @Override
             public UpdateMmrResponse parse(String jsonText) {
@@ -193,22 +191,22 @@ public class BackendConnect {
         });
     }
 
-    private HttpRequest buildGetRequest(String url) {
-        return new HttpRequestBuilder()
+    private HttpRequest buildGetRequest(String url, boolean includeAuthHeaders) {
+        HttpRequest request = new HttpRequestBuilder()
             .newRequest()
             .method(HttpMethods.GET)
             .url(url)
             .timeout(10000)
             .build();
-    }
 
-    private HttpRequest buildAuthenticatedGetRequest(String url, String authPlayerId, String authToken) {
-        HttpRequest request = buildGetRequest(url);
-        applyAuthHeaders(request, authPlayerId, authToken);
+        if (includeAuthHeaders) {
+            applyAuthHeaders(request);
+        }
+
         return request;
     }
 
-    private HttpRequest buildPostRequest(String url, String body) {
+    private HttpRequest buildPostRequest(String url, String body, boolean includeAuthHeaders) {
         HttpRequest request = new HttpRequestBuilder()
             .newRequest()
             .method(HttpMethods.POST)
@@ -218,49 +216,22 @@ public class BackendConnect {
 
         request.setHeader("Content-Type", "application/json");
         request.setContent(body);
+
+        if (includeAuthHeaders) {
+            applyAuthHeaders(request);
+        }
+
         return request;
     }
 
-    private HttpRequest buildAuthenticatedPostRequest(String url, String body, String authPlayerId, String authToken) {
-        HttpRequest request = buildPostRequest(url, body);
-        applyAuthHeaders(request, authPlayerId, authToken);
-        return request;
-    }
-
-    private void applyAuthHeaders(HttpRequest request, String authPlayerId, String authToken) {
-        if (request == null) {
-            return;
+    private void applyAuthHeaders(HttpRequest request) {
+        if (SessionData.id != null && !SessionData.id.trim().isEmpty()) {
+            request.setHeader("X-Player-Id", SessionData.id);
         }
 
-        if (!isBlank(authPlayerId)) {
-            request.setHeader(HEADER_PLAYER_ID, authPlayerId.trim());
+        if (SessionData.authToken != null && !SessionData.authToken.trim().isEmpty()) {
+            request.setHeader("X-Player-Token", SessionData.authToken);
         }
-        if (!isBlank(authToken)) {
-            request.setHeader(HEADER_PLAYER_TOKEN, authToken.trim());
-        }
-    }
-
-    private void debugAuth(String label, String authPlayerId, String authToken) {
-        System.out.println(label + " AUTH PLAYER ID: " + (isBlank(authPlayerId) ? "<missing>" : authPlayerId));
-        System.out.println(label + " AUTH TOKEN PRESENT: " + (!isBlank(authToken)));
-        System.out.println(label + " AUTH TOKEN PREVIEW: " + previewToken(authToken));
-    }
-
-    private String previewToken(String token) {
-        if (isBlank(token)) {
-            return "<missing>";
-        }
-
-        String trimmed = token.trim();
-        if (trimmed.length() <= 8) {
-            return trimmed;
-        }
-
-        return trimmed.substring(0, 8) + "...";
-    }
-
-    private boolean isBlank(String value) {
-        return value == null || value.trim().isEmpty();
     }
 
     private <T> void sendRequest(
@@ -340,8 +311,13 @@ public class BackendConnect {
         playerData.username = data.getString("username");
         playerData.musicEnabled = data.getBoolean("musicEnabled");
         playerData.sfxEnabled = data.getBoolean("sfxEnabled");
-        playerData.vibrationEnabled = data.has("vibrationEnabled") ? data.getBoolean("vibrationEnabled") : true;
+        playerData.vibrationEnabled = data.has("vibrationEnabled")
+            ? data.getBoolean("vibrationEnabled")
+            : true;
         playerData.theme = data.getString("theme");
+        playerData.mode = data.has("mode")
+            ? data.getString("mode")
+            : "practice";
         playerData.wins = data.getInt("wins");
         playerData.losses = data.getInt("losses");
         playerData.currentGamemode = data.getString("currentGamemode");
@@ -366,8 +342,13 @@ public class BackendConnect {
         response.id = data.getString("id");
         response.musicEnabled = data.getBoolean("musicEnabled");
         response.sfxEnabled = data.getBoolean("sfxEnabled");
-        response.vibrationEnabled = data.has("vibrationEnabled") ? data.getBoolean("vibrationEnabled") : true;
+        response.vibrationEnabled = data.has("vibrationEnabled")
+            ? data.getBoolean("vibrationEnabled")
+            : true;
         response.theme = data.getString("theme");
+        response.mode = data.has("mode")
+            ? data.getString("mode")
+            : "practice";
         response.currentGamemode = data.getString("currentGamemode");
         response.currentBoardWidth = data.getInt("currentBoardWidth");
         response.currentBoardHeight = data.getInt("currentBoardHeight");
@@ -463,5 +444,18 @@ public class BackendConnect {
             .replace("\n", "\\n")
             .replace("\r", "\\r")
             .replace("\t", "\\t");
+    }
+
+    private String previewToken(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            return "<missing>";
+        }
+
+        String trimmed = token.trim();
+        if (trimmed.length() <= 8) {
+            return trimmed;
+        }
+
+        return trimmed.substring(0, 8) + "...";
     }
 }

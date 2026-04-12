@@ -8,6 +8,7 @@ public class SessionData {
     public static boolean sfxEnabled;
     public static boolean vibrationEnabled;
     public static String theme;
+    public static String mode;
 
     public static int wins;
     public static int losses;

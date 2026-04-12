@@ -11,6 +11,9 @@ public class ThemeManager {
         if(isValidTheme(newTheme)){
             currentTheme = newTheme;
             DataManager.update();
+        } else {
+            currentTheme = "Cabin";
+            DataManager.update();
         }
     }
 

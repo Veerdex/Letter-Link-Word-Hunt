@@ -50,7 +50,6 @@ public class DataManager {
     protected static String fontName;
 
     // ========== User Info ==========
-    protected static String userName = null;
     protected static float rank = 1050;
 
     // ========== Asset Loading ==========
@@ -181,10 +180,6 @@ public class DataManager {
 
         iconTexture = new Texture(ICON_PATH + name);
         iconTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-    }
-
-    public static void setUserName(String userName){
-        DataManager.userName = userName;
     }
 
     // ========== Resource Cleanup ==========

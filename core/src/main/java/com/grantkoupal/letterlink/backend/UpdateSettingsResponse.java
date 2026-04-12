@@ -7,6 +7,7 @@ public class UpdateSettingsResponse {
     public boolean sfxEnabled;
     public boolean vibrationEnabled;
     public String theme;
+    public String mode;
     public String currentGamemode;
     public int currentBoardWidth;
     public int currentBoardHeight;

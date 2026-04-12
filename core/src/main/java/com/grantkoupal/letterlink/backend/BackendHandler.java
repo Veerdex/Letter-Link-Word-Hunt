@@ -145,6 +145,7 @@ public class BackendHandler {
                         }
                         if (DEBUG > 1) {
                             System.out.println("Theme: " + playerData.theme);
+                            System.out.println("Mode: " + playerData.mode);
                             System.out.println("Gamemode: " + playerData.currentGamemode);
                         }
                         if (DEBUG > 2) {
@@ -196,6 +197,7 @@ public class BackendHandler {
             SessionData.sfxEnabled,
             SessionData.vibrationEnabled,
             SessionData.theme,
+            SessionData.mode,
             SessionData.currentGamemode,
             SessionData.currentBoardWidth,
             SessionData.currentBoardHeight,
@@ -210,6 +212,7 @@ public class BackendHandler {
                             if (DEBUG > 1) {
                                 System.out.println("Session settings synced to server.");
                                 System.out.println("Theme: " + SessionData.theme);
+                                System.out.println("Mode: " + SessionData.mode);
                                 System.out.println("Gamemode: " + SessionData.currentGamemode);
                                 System.out.println("Music: " + SessionData.musicEnabled);
                                 System.out.println("SFX: " + SessionData.sfxEnabled);
@@ -251,6 +254,7 @@ public class BackendHandler {
         SessionData.sfxEnabled = playerData.sfxEnabled;
         SessionData.vibrationEnabled = playerData.vibrationEnabled;
         SessionData.theme = playerData.theme;
+        SessionData.mode = playerData.mode;
 
         SessionData.wins = playerData.wins;
         SessionData.losses = playerData.losses;
@@ -276,6 +280,7 @@ public class BackendHandler {
         SessionData.sfxEnabled = response.sfxEnabled;
         SessionData.vibrationEnabled = response.vibrationEnabled;
         SessionData.theme = response.theme;
+        SessionData.mode = response.mode;
         SessionData.currentGamemode = response.currentGamemode;
         SessionData.currentBoardWidth = response.currentBoardWidth;
         SessionData.currentBoardHeight = response.currentBoardHeight;

@@ -8,6 +8,7 @@ public class PlayerData {
     public boolean sfxEnabled;
     public boolean vibrationEnabled;
     public String theme;
+    public String mode;
 
     public int wins;
     public int losses;

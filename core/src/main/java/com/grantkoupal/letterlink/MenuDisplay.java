@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.grantkoupal.letterlink.backend.data.SessionData;
 import com.grantkoupal.letterlink.quantum.core.*;
 
 import java.util.ArrayList;
@@ -59,7 +60,7 @@ public class MenuDisplay extends Agent {
         // Font
         font = Source.generateFont(com.grantkoupal.letterlink.DataManager.fontName, FONT_SIZE);
         updateScaleForFont();
-        layout = new GlyphLayout(font, com.grantkoupal.letterlink.DataManager.userName);
+        layout = new GlyphLayout(font, SessionData.username);
 
         // Timer start
         startTime = System.currentTimeMillis();
@@ -239,7 +240,7 @@ public class MenuDisplay extends Agent {
 
     // Kept as-is (unused in this class currently), just reorganized.
     private String constrain(String s, GlyphLayout gl) {
-        String name = com.grantkoupal.letterlink.DataManager.userName;
+        String name = SessionData.username;
 
         if (gl.width > Source.getScreenWidth() / 2f - 175 * scale) {
             int i = s.length();
