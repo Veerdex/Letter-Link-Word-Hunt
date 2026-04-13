@@ -233,6 +233,19 @@ public class Board extends Agent {
         }
     }
 
+    public static void setBoardWidth(int newWidth){
+        Board.width = newWidth;
+    }
+
+    public static void setBoardHeight(int newHeight){
+        Board.height = newHeight;
+    }
+
+    public static void setBoardDimensions(int newWidth, int newHeight){
+        Board.width = newWidth;
+        Board.height = newHeight;
+    }
+
     private static void resetGameState() {
         // Clear collections
         listOfWordsFound.clear();

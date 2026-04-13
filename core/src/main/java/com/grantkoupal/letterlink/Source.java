@@ -24,8 +24,10 @@ public class Source extends Manager {
 
                 RankHandler.loadTextures();
 
-                MainMenu mm = new MainMenu();
-                loadNewPage(mm);
+                //MainMenu mm = new MainMenu();
+                //loadNewPage(mm);
+                LoadingBoardPage lbp = new LoadingBoardPage();
+                loadNewPage(lbp);
             }
 
             @Override

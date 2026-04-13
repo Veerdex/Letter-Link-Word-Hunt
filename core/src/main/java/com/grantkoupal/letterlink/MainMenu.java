@@ -230,7 +230,9 @@ public class MainMenu extends Page {
                 } else if(gearHover){
 
                 } else if(playHover){
-
+                    Board.setBoardDimensions(SessionData.currentBoardWidth, SessionData.currentBoardHeight);
+                    LoadingBoardPage lbp = new LoadingBoardPage();
+                    Source.loadNewPage(lbp);
                 } else if(gamemodeHover){
                     actionsEnabled = false;
                     gamemodeSelection.popUp();

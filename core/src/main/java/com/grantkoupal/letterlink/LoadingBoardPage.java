@@ -38,7 +38,7 @@ public class LoadingBoardPage extends Page {
             public void run() {
                 try {
                     // This is where the heavy loading happens
-                    ImprovedBoardGenerator.generateBoard(9, 5, 5);
+                    ImprovedBoardGenerator.generateBoard(4, 4, 4);
 
                     // Mark as complete
                     loadingComplete = true;
