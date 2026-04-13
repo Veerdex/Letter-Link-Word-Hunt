@@ -9,6 +9,7 @@ public class PlayerData {
     public boolean vibrationEnabled;
     public String theme;
     public String mode;
+    public int banAmount;
 
     public int wins;
     public int losses;

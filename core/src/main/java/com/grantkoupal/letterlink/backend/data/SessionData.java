@@ -9,6 +9,7 @@ public class SessionData {
     public static boolean vibrationEnabled;
     public static String theme;
     public static String mode;
+    public static int banAmount;
 
     public static int wins;
     public static int losses;
@@ -25,4 +26,13 @@ public class SessionData {
     public static int mmr5x5;
 
     public static String authToken;
+
+    public static boolean matchmakingActive;
+    public static String currentQueueTicketId;
+    public static String currentMatchId;
+    public static String currentOpponentId;
+    public static String currentOpponentUsername;
+    public static String currentMatchBoardLetters;
+    public static int currentMatchPower = 4;
+    public static int matchPower = 4;
 }

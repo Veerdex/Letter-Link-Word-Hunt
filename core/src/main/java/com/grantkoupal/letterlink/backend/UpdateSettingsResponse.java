@@ -1,7 +1,6 @@
 package com.grantkoupal.letterlink.backend;
 
 public class UpdateSettingsResponse {
-    public boolean success;
     public String id;
     public boolean musicEnabled;
     public boolean sfxEnabled;

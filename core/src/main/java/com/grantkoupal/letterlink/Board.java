@@ -168,19 +168,14 @@ public class Board extends Agent {
      * Loads board data from Solver and initializes game state.
      */
     public static void loadNewBoard() {
-        boolean remakeTextures = width != Solver.getBoardWidth() ||
-            height != Solver.getBoardHeight();
-
         resetGameState();
         initializeTimers();
         loadBoardData();
         setDimensions();
         initializeBoard();
 
-        if (remakeTextures) {
-            generateTextures();
-            generateObjects();
-        }
+        generateTextures();
+        generateObjects();
     }
 
     // ========================================
@@ -213,8 +208,8 @@ public class Board extends Agent {
         }
 
         fb = new FrameBuffer(Pixmap.Format.RGBA8888,
-            width,
-            height,
+            Source.getScreenWidth(),
+            Source.getScreenHeight(),
             false);
     }
 

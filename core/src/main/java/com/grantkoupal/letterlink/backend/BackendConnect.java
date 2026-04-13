@@ -12,6 +12,8 @@ import com.grantkoupal.letterlink.backend.data.PlayerData;
 import com.grantkoupal.letterlink.backend.data.SessionData;
 
 import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.List;
 
 public class BackendConnect {
 
@@ -39,6 +41,27 @@ public class BackendConnect {
     }
 
     public interface UpdateMmrCallback extends BaseCallback<UpdateMmrResponse> {
+    }
+
+    public interface BanAmountCallback extends BaseCallback<BanAmountResponse> {
+    }
+
+    public interface QueueTicketCallback extends BaseCallback<QueueTicketResponse> {
+    }
+
+    public interface CancelQueueCallback extends BaseCallback<CancelQueueResponse> {
+    }
+
+    public interface QueueHeartbeatCallback extends BaseCallback<QueueHeartbeatResponse> {
+    }
+
+    public interface MatchStatusCallback extends BaseCallback<MatchStatusResponse> {
+    }
+
+    public interface AcknowledgeMatchCallback extends BaseCallback<AcknowledgeMatchResponse> {
+    }
+
+    public interface AbandonMatchCallback extends BaseCallback<AbandonMatchResponse> {
     }
 
     public void registerPlayer(String username, RegisterCallback callback) {
@@ -100,6 +123,20 @@ public class BackendConnect {
             @Override
             public PlayerData parse(String jsonText) {
                 return parsePlayerData(jsonText);
+            }
+        });
+    }
+
+    public void getBanAmount(String playerId, BanAmountCallback callback) {
+        String url = BASE_URL + "/players/ban-amount?id=" + encode(playerId);
+
+        System.out.println("GET BAN AMOUNT URL: " + url);
+
+        HttpRequest request = buildGetRequest(url, true);
+        sendRequest("GET BAN AMOUNT", request, callback, new ResponseParser<BanAmountResponse>() {
+            @Override
+            public BanAmountResponse parse(String jsonText) {
+                return parseBanAmountResponse(jsonText);
             }
         });
     }
@@ -187,6 +224,112 @@ public class BackendConnect {
             @Override
             public UpdateMmrResponse parse(String jsonText) {
                 return parseUpdateMmrResponse(jsonText);
+            }
+        });
+    }
+
+    public void queueForMatch(
+        String playerId,
+        String mode,
+        String currentGamemode,
+        int boardWidth,
+        int boardHeight,
+        int power,
+        QueueTicketCallback callback
+    ) {
+        String url = BASE_URL + "/matchmaking/queue";
+        String body = "{"
+            + "\"id\":\"" + escapeJson(playerId) + "\","
+            + "\"mode\":\"" + escapeJson(mode) + "\","
+            + "\"currentGamemode\":\"" + escapeJson(currentGamemode) + "\","
+            + "\"boardWidth\":" + boardWidth + ","
+            + "\"boardHeight\":" + boardHeight + ","
+            + "\"power\":" + power
+            + "}";
+
+        System.out.println("QUEUE URL: " + url);
+        System.out.println("QUEUE BODY: " + body);
+
+        HttpRequest request = buildPostRequest(url, body, true);
+        sendRequest("QUEUE", request, callback, new ResponseParser<QueueTicketResponse>() {
+            @Override
+            public QueueTicketResponse parse(String jsonText) {
+                return parseQueueTicketResponse(jsonText);
+            }
+        });
+    }
+
+    public void cancelQueue(String ticketId, CancelQueueCallback callback) {
+        String url = BASE_URL + "/matchmaking/cancel";
+        String body = "{"
+            + "\"ticketId\":\"" + escapeJson(ticketId) + "\""
+            + "}";
+
+        System.out.println("CANCEL QUEUE URL: " + url);
+        System.out.println("CANCEL QUEUE BODY: " + body);
+
+        HttpRequest request = buildPostRequest(url, body, true);
+        sendRequest("CANCEL QUEUE", request, callback, new ResponseParser<CancelQueueResponse>() {
+            @Override
+            public CancelQueueResponse parse(String jsonText) {
+                return parseCancelQueueResponse(jsonText);
+            }
+        });
+    }
+
+    public void sendQueueHeartbeat(String ticketId, QueueHeartbeatCallback callback) {
+        String url = BASE_URL + "/matchmaking/heartbeat";
+        String body = "{"
+            + "\"ticketId\":\"" + escapeJson(ticketId) + "\""
+            + "}";
+
+        HttpRequest request = buildPostRequest(url, body, true);
+        sendRequest("QUEUE HEARTBEAT", request, callback, new ResponseParser<QueueHeartbeatResponse>() {
+            @Override
+            public QueueHeartbeatResponse parse(String jsonText) {
+                return parseQueueHeartbeatResponse(jsonText);
+            }
+        });
+    }
+
+    public void getQueueStatus(String ticketId, MatchStatusCallback callback) {
+        String url = BASE_URL + "/matchmaking/status?ticketId=" + encode(ticketId);
+
+        HttpRequest request = buildGetRequest(url, true);
+        sendRequest("QUEUE STATUS", request, callback, new ResponseParser<MatchStatusResponse>() {
+            @Override
+            public MatchStatusResponse parse(String jsonText) {
+                return parseMatchStatusResponse(jsonText);
+            }
+        });
+    }
+
+    public void acknowledgeMatch(String matchId, AcknowledgeMatchCallback callback) {
+        String url = BASE_URL + "/matchmaking/acknowledge";
+        String body = "{"
+            + "\"matchId\":\"" + escapeJson(matchId) + "\""
+            + "}";
+
+        HttpRequest request = buildPostRequest(url, body, true);
+        sendRequest("ACKNOWLEDGE MATCH", request, callback, new ResponseParser<AcknowledgeMatchResponse>() {
+            @Override
+            public AcknowledgeMatchResponse parse(String jsonText) {
+                return parseAcknowledgeMatchResponse(jsonText);
+            }
+        });
+    }
+
+    public void abandonMatch(String matchId, AbandonMatchCallback callback) {
+        String url = BASE_URL + "/matchmaking/abandon";
+        String body = "{"
+            + "\"matchId\":\"" + escapeJson(matchId) + "\""
+            + "}";
+
+        HttpRequest request = buildPostRequest(url, body, true);
+        sendRequest("ABANDON MATCH", request, callback, new ResponseParser<AbandonMatchResponse>() {
+            @Override
+            public AbandonMatchResponse parse(String jsonText) {
+                return parseAbandonMatchResponse(jsonText);
             }
         });
     }
@@ -311,13 +454,10 @@ public class BackendConnect {
         playerData.username = data.getString("username");
         playerData.musicEnabled = data.getBoolean("musicEnabled");
         playerData.sfxEnabled = data.getBoolean("sfxEnabled");
-        playerData.vibrationEnabled = data.has("vibrationEnabled")
-            ? data.getBoolean("vibrationEnabled")
-            : true;
+        playerData.vibrationEnabled = data.has("vibrationEnabled") ? data.getBoolean("vibrationEnabled") : true;
         playerData.theme = data.getString("theme");
-        playerData.mode = data.has("mode")
-            ? data.getString("mode")
-            : "practice";
+        playerData.mode = data.has("mode") ? data.getString("mode") : "practice";
+        playerData.banAmount = data.has("banAmount") ? data.getInt("banAmount") : 0;
         playerData.wins = data.getInt("wins");
         playerData.losses = data.getInt("losses");
         playerData.currentGamemode = data.getString("currentGamemode");
@@ -335,6 +475,16 @@ public class BackendConnect {
         return playerData;
     }
 
+    private BanAmountResponse parseBanAmountResponse(String jsonText) {
+        JsonValue data = parseApiData(jsonText, "Get ban amount");
+
+        BanAmountResponse response = new BanAmountResponse();
+        response.id = data.getString("id");
+        response.banAmount = data.getInt("banAmount");
+        response.updatedAt = data.getString("updatedAt");
+        return response;
+    }
+
     private UpdateSettingsResponse parseUpdateSettingsResponse(String jsonText) {
         JsonValue data = parseApiData(jsonText, "Update settings");
 
@@ -342,13 +492,9 @@ public class BackendConnect {
         response.id = data.getString("id");
         response.musicEnabled = data.getBoolean("musicEnabled");
         response.sfxEnabled = data.getBoolean("sfxEnabled");
-        response.vibrationEnabled = data.has("vibrationEnabled")
-            ? data.getBoolean("vibrationEnabled")
-            : true;
+        response.vibrationEnabled = data.has("vibrationEnabled") ? data.getBoolean("vibrationEnabled") : true;
         response.theme = data.getString("theme");
-        response.mode = data.has("mode")
-            ? data.getString("mode")
-            : "practice";
+        response.mode = data.has("mode") ? data.getString("mode") : "practice";
         response.currentGamemode = data.getString("currentGamemode");
         response.currentBoardWidth = data.getInt("currentBoardWidth");
         response.currentBoardHeight = data.getInt("currentBoardHeight");
@@ -378,6 +524,100 @@ public class BackendConnect {
         response.mmr = data.getInt("mmr");
         response.updatedAt = data.getString("updatedAt");
 
+        return response;
+    }
+
+    private QueueTicketResponse parseQueueTicketResponse(String jsonText) {
+        JsonValue data = parseApiData(jsonText, "Queue for match");
+
+        QueueTicketResponse response = new QueueTicketResponse();
+        response.ticketId = data.getString("ticketId");
+        response.ticketStatus = data.getString("ticketStatus");
+        response.mode = data.getString("mode");
+        response.currentGamemode = data.getString("currentGamemode");
+        response.boardWidth = data.getInt("boardWidth");
+        response.boardHeight = data.getInt("boardHeight");
+        response.mmr = data.getInt("mmr");
+        response.power = data.getInt("power");
+        response.queuedAt = data.getString("queuedAt");
+        response.updatedAt = data.getString("updatedAt");
+        response.matchId = data.has("matchId") && !data.get("matchId").isNull() ? data.getString("matchId") : null;
+        return response;
+    }
+
+    private CancelQueueResponse parseCancelQueueResponse(String jsonText) {
+        JsonValue data = parseApiData(jsonText, "Cancel queue");
+
+        CancelQueueResponse response = new CancelQueueResponse();
+        response.ticketId = data.getString("ticketId");
+        response.cancelled = data.getBoolean("cancelled");
+        response.ticketStatus = data.getString("ticketStatus");
+        response.matchId = data.has("matchId") && !data.get("matchId").isNull() ? data.getString("matchId") : null;
+        response.matchStatus = data.has("matchStatus") && !data.get("matchStatus").isNull() ? data.getString("matchStatus") : null;
+        response.updatedAt = data.getString("updatedAt");
+        return response;
+    }
+
+    private QueueHeartbeatResponse parseQueueHeartbeatResponse(String jsonText) {
+        JsonValue data = parseApiData(jsonText, "Queue heartbeat");
+
+        QueueHeartbeatResponse response = new QueueHeartbeatResponse();
+        response.ticketId = data.getString("ticketId");
+        response.ticketStatus = data.getString("ticketStatus");
+        response.matchId = data.has("matchId") && !data.get("matchId").isNull() ? data.getString("matchId") : null;
+        response.matchStatus = data.has("matchStatus") && !data.get("matchStatus").isNull() ? data.getString("matchStatus") : null;
+        response.updatedAt = data.getString("updatedAt");
+        return response;
+    }
+
+    private MatchStatusResponse parseMatchStatusResponse(String jsonText) {
+        JsonValue data = parseApiData(jsonText, "Match status");
+
+        MatchStatusResponse response = new MatchStatusResponse();
+        response.ticketId = data.getString("ticketId");
+        response.ticketStatus = data.getString("ticketStatus");
+        response.matchId = data.has("matchId") && !data.get("matchId").isNull() ? data.getString("matchId") : null;
+        response.matchStatus = data.has("matchStatus") && !data.get("matchStatus").isNull() ? data.getString("matchStatus") : null;
+        response.playerAcknowledged = data.getBoolean("playerAcknowledged", false);
+        response.bothAcknowledged = data.getBoolean("bothAcknowledged", false);
+        response.ready = data.getBoolean("ready", false);
+        response.opponentId = data.has("opponentId") && !data.get("opponentId").isNull() ? data.getString("opponentId") : null;
+        response.opponentUsername = data.has("opponentUsername") && !data.get("opponentUsername").isNull() ? data.getString("opponentUsername") : null;
+        response.mode = data.has("mode") && !data.get("mode").isNull() ? data.getString("mode") : null;
+        response.currentGamemode = data.has("currentGamemode") && !data.get("currentGamemode").isNull() ? data.getString("currentGamemode") : null;
+        response.boardWidth = data.getInt("boardWidth", 0);
+        response.boardHeight = data.getInt("boardHeight", 0);
+        response.power = data.getInt("power", 4);
+        response.boardLetters = data.has("boardLetters") && !data.get("boardLetters").isNull() ? data.getString("boardLetters") : null;
+        response.boardRows = parseStringList(data.get("boardRows"));
+        response.updatedAt = data.getString("updatedAt");
+        return response;
+    }
+
+    private AcknowledgeMatchResponse parseAcknowledgeMatchResponse(String jsonText) {
+        JsonValue data = parseApiData(jsonText, "Acknowledge match");
+
+        AcknowledgeMatchResponse response = new AcknowledgeMatchResponse();
+        response.matchId = data.getString("matchId");
+        response.matchStatus = data.has("matchStatus") && !data.get("matchStatus").isNull() ? data.getString("matchStatus") : null;
+        response.playerAcknowledged = data.getBoolean("playerAcknowledged", false);
+        response.bothAcknowledged = data.getBoolean("bothAcknowledged", false);
+        response.ready = data.getBoolean("ready", false);
+        response.power = data.getInt("power", 4);
+        response.boardLetters = data.has("boardLetters") && !data.get("boardLetters").isNull() ? data.getString("boardLetters") : null;
+        response.boardRows = parseStringList(data.get("boardRows"));
+        response.updatedAt = data.getString("updatedAt");
+        return response;
+    }
+
+    private AbandonMatchResponse parseAbandonMatchResponse(String jsonText) {
+        JsonValue data = parseApiData(jsonText, "Abandon match");
+
+        AbandonMatchResponse response = new AbandonMatchResponse();
+        response.matchId = data.getString("matchId");
+        response.matchStatus = data.getString("matchStatus");
+        response.banAmount = data.getInt("banAmount");
+        response.updatedAt = data.getString("updatedAt");
         return response;
     }
 
@@ -419,10 +659,21 @@ public class BackendConnect {
     }
 
     private int getIntOrDefault(JsonValue json, String key, int defaultValue) {
-        if (json == null || !json.has(key)) {
+        if (json == null || !json.has(key) || json.get(key).isNull()) {
             return defaultValue;
         }
         return json.getInt(key);
+    }
+
+    private List<String> parseStringList(JsonValue json) {
+        List<String> values = new ArrayList<String>();
+        if (json == null) {
+            return values;
+        }
+        for (JsonValue child = json.child; child != null; child = child.next) {
+            values.add(child.asString());
+        }
+        return values;
     }
 
     private String encode(String value) {
