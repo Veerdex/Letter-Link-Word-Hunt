@@ -53,7 +53,7 @@ public class LoadingBoardPage extends Page {
     }
 
     private void startCompletionPollTimer() {
-        addTimer(new Timer(POLL_INTERVAL_SECONDS, Timer.INDEFINITE, new TimeFrame() {
+        add(new Timer(POLL_INTERVAL_SECONDS, Timer.INDEFINITE, new TimeFrame() {
             @Override
             public void run(long iteration) {
                 if (!loadingComplete) return;
@@ -71,6 +71,11 @@ public class LoadingBoardPage extends Page {
 
         // Restart the loading process
         initialize();
+    }
+
+    @Override
+    public void frame() {
+
     }
 
     @Override

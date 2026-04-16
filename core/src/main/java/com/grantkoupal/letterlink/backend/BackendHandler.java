@@ -10,7 +10,12 @@ import java.util.UUID;
 
 public class BackendHandler {
     private static final BackendConnect backend = new BackendConnect();
-    private static final int DEBUG = 3;
+
+    // 0 = silent
+    // 1 = important events + failures
+    // 2 = normal flow details
+    // 3 = very verbose
+    private static final int DEBUG = 0;
 
     private static Timer.Task heartbeatTask;
     private static Timer.Task statusPollTask;
@@ -42,7 +47,7 @@ public class BackendHandler {
     }
 
     public static void startUp(final StartupCallback callback) {
-        final Preferences prefs = Gdx.app.getPreferences("LetterLink");
+        final Preferences prefs = getPreferences();
 
         String savedPlayerId = prefs.getString("playerId", "");
         String savedAuthToken = prefs.getString("authToken", "");
@@ -54,19 +59,26 @@ public class BackendHandler {
             savedAuthToken = savedAuthToken.trim();
         }
 
-        if (savedPlayerId == null || savedPlayerId.isEmpty()) {
+        debug(2, "Startup beginning.");
+        debug(3, "Saved playerId present: " + !isBlank(savedPlayerId));
+        debug(3, "Saved authToken present: " + !isBlank(savedAuthToken));
+
+        if (isBlank(savedPlayerId)) {
+            debug(1, "No saved player ID. Registering a fresh player.");
             registerFreshPlayer(prefs, callback);
             return;
         }
 
         SessionData.id = savedPlayerId;
 
-        if (savedAuthToken != null && !savedAuthToken.isEmpty()) {
+        if (!isBlank(savedAuthToken)) {
             SessionData.authToken = savedAuthToken;
+            debug(2, "Found saved auth token. Loading existing player data.");
             loadPlayerData(savedPlayerId, callback);
             return;
         }
 
+        debug(1, "No saved auth token. Bootstrapping legacy session.");
         backend.bootstrapSession(savedPlayerId, new BackendConnect.PlayerDataCallback() {
             @Override
             public void onSuccess(final PlayerData playerData) {
@@ -79,11 +91,8 @@ public class BackendHandler {
                         prefs.putString("authToken", playerData.authToken == null ? "" : playerData.authToken);
                         prefs.flush();
 
-                        if (DEBUG > 0) {
-                            System.out.println("Bootstrapped legacy session successfully.");
-                            System.out.println("ID: " + SessionData.id);
-                            System.out.println("Username: " + SessionData.username);
-                        }
+                        debug(1, "Legacy session bootstrapped successfully.");
+                        debug(2, "Bootstrapped player: " + SessionData.username + " (" + SessionData.id + ")");
 
                         if (callback != null) {
                             callback.onSuccess();
@@ -97,7 +106,7 @@ public class BackendHandler {
                 Gdx.app.postRunnable(new Runnable() {
                     @Override
                     public void run() {
-                        System.out.println("Bootstrap failed with stale or missing local playerId. Registering a fresh local player.");
+                        debugError(1, "Bootstrap failed. Registering a fresh local player.", t);
                         registerFreshPlayer(prefs, callback);
                     }
                 });
@@ -107,6 +116,7 @@ public class BackendHandler {
 
     private static void registerFreshPlayer(final Preferences prefs, final StartupCallback callback) {
         final String username = generateGuestUsername();
+        debug(1, "Registering new player: " + username);
 
         backend.registerPlayer(username, new BackendConnect.RegisterCallback() {
             @Override
@@ -122,11 +132,8 @@ public class BackendHandler {
                         SessionData.username = response.username;
                         SessionData.authToken = response.authToken;
 
-                        if (DEBUG > 0) {
-                            System.out.println("Registered new player:");
-                            System.out.println("ID: " + response.id);
-                            System.out.println("Username: " + response.username);
-                        }
+                        debug(1, "Registered new player successfully.");
+                        debug(2, "Registered player: " + response.username + " (" + response.id + ")");
 
                         loadPlayerData(response.id, callback);
                     }
@@ -138,7 +145,7 @@ public class BackendHandler {
                 Gdx.app.postRunnable(new Runnable() {
                     @Override
                     public void run() {
-                        t.printStackTrace();
+                        debugError(1, "Failed to register fresh player.", t);
 
                         if (callback != null) {
                             callback.onFailure(t);
@@ -150,6 +157,8 @@ public class BackendHandler {
     }
 
     private static void loadPlayerData(final String playerId, final StartupCallback callback) {
+        debug(2, "Loading player data for: " + playerId);
+
         backend.getPlayerData(playerId, new BackendConnect.PlayerDataCallback() {
             @Override
             public void onSuccess(final PlayerData playerData) {
@@ -158,27 +167,18 @@ public class BackendHandler {
                     public void run() {
                         applyPlayerDataToSession(playerData);
 
-                        if (DEBUG > 0) {
-                            System.out.println("Loaded player data:");
-                            System.out.println("ID: " + playerData.id);
-                            System.out.println("Username: " + playerData.username);
-                        }
-                        if (DEBUG > 1) {
-                            System.out.println("Theme: " + playerData.theme);
-                            System.out.println("Mode: " + playerData.mode);
-                            System.out.println("Gamemode: " + playerData.currentGamemode);
-                        }
-                        if (DEBUG > 2) {
-                            System.out.println("Music: " + playerData.musicEnabled);
-                            System.out.println("SFX: " + playerData.sfxEnabled);
-                            System.out.println("Vibration: " + playerData.vibrationEnabled);
-                            System.out.println("Ban Amount: " + playerData.banAmount);
-                            System.out.println("4x4 MMR: " + playerData.mmr4x4);
-                            System.out.println("4x5 MMR: " + playerData.mmr4x5);
-                            System.out.println("5x5 MMR: " + playerData.mmr5x5);
-                            System.out.println("Board Width: " + playerData.currentBoardWidth);
-                            System.out.println("Board Height: " + playerData.currentBoardHeight);
-                        }
+                        debug(1, "Player data loaded.");
+                        debug(2, "Player: " + playerData.username
+                            + " | Mode: " + playerData.mode
+                            + " | Gamemode: " + playerData.currentGamemode);
+                        debug(3, "Music=" + playerData.musicEnabled
+                            + ", SFX=" + playerData.sfxEnabled
+                            + ", Vibration=" + playerData.vibrationEnabled
+                            + ", BanAmount=" + playerData.banAmount
+                            + ", 4x4 MMR=" + playerData.mmr4x4
+                            + ", 4x5 MMR=" + playerData.mmr4x5
+                            + ", 5x5 MMR=" + playerData.mmr5x5
+                            + ", Board=" + playerData.currentBoardWidth + "x" + playerData.currentBoardHeight);
 
                         if (callback != null) {
                             callback.onSuccess();
@@ -192,7 +192,7 @@ public class BackendHandler {
                 Gdx.app.postRunnable(new Runnable() {
                     @Override
                     public void run() {
-                        t.printStackTrace();
+                        debugError(1, "Failed to load player data.", t);
 
                         if (callback != null) {
                             callback.onFailure(t);
@@ -204,13 +204,16 @@ public class BackendHandler {
     }
 
     public static void refreshBanAmount(final SimpleCallback callback) {
-        if (SessionData.id == null || SessionData.id.trim().isEmpty()) {
+        if (isBlank(SessionData.id)) {
             RuntimeException error = new RuntimeException("SessionData.id is missing");
+            debugError(1, "Cannot refresh ban amount.", error);
             if (callback != null) {
                 callback.onFailure(error);
             }
             return;
         }
+
+        debug(2, "Refreshing ban amount for player: " + SessionData.id);
 
         backend.getBanAmount(SessionData.id, new BackendConnect.BanAmountCallback() {
             @Override
@@ -220,6 +223,8 @@ public class BackendHandler {
                     public void run() {
                         SessionData.banAmount = response.banAmount;
                         SessionData.updatedAt = response.updatedAt;
+
+                        debug(2, "Ban amount refreshed: " + response.banAmount);
 
                         if (callback != null) {
                             callback.onSuccess();
@@ -233,6 +238,8 @@ public class BackendHandler {
                 Gdx.app.postRunnable(new Runnable() {
                     @Override
                     public void run() {
+                        debugError(1, "Failed to refresh ban amount.", t);
+
                         if (callback != null) {
                             callback.onFailure(t);
                         }
@@ -243,13 +250,23 @@ public class BackendHandler {
     }
 
     public static void syncSessionSettingsToServer(final SimpleCallback callback) {
-        if (SessionData.id == null || SessionData.id.trim().isEmpty()) {
+        if (isBlank(SessionData.id)) {
             RuntimeException error = new RuntimeException("SessionData.id is missing");
+            debugError(1, "Cannot sync settings.", error);
             if (callback != null) {
                 callback.onFailure(error);
             }
             return;
         }
+
+        debug(2, "Syncing session settings to server.");
+        debug(3, "Theme=" + SessionData.theme
+            + ", Mode=" + SessionData.mode
+            + ", Gamemode=" + SessionData.currentGamemode
+            + ", Music=" + SessionData.musicEnabled
+            + ", SFX=" + SessionData.sfxEnabled
+            + ", Vibration=" + SessionData.vibrationEnabled
+            + ", Board=" + SessionData.currentBoardWidth + "x" + SessionData.currentBoardHeight);
 
         backend.updatePlayerSettings(
             SessionData.id,
@@ -269,18 +286,8 @@ public class BackendHandler {
                         public void run() {
                             applySettingsResponseToSession(response);
 
-                            if (DEBUG > 1) {
-                                System.out.println("Session settings synced to server.");
-                                System.out.println("Theme: " + SessionData.theme);
-                                System.out.println("Mode: " + SessionData.mode);
-                                System.out.println("Gamemode: " + SessionData.currentGamemode);
-                                System.out.println("Music: " + SessionData.musicEnabled);
-                                System.out.println("SFX: " + SessionData.sfxEnabled);
-                                System.out.println("Vibration: " + SessionData.vibrationEnabled);
-                                System.out.println("Board Width: " + SessionData.currentBoardWidth);
-                                System.out.println("Board Height: " + SessionData.currentBoardHeight);
-                                System.out.println("Updated At: " + SessionData.updatedAt);
-                            }
+                            debug(1, "Session settings synced successfully.");
+                            debug(2, "Updated at: " + SessionData.updatedAt);
 
                             if (callback != null) {
                                 callback.onSuccess();
@@ -294,7 +301,7 @@ public class BackendHandler {
                     Gdx.app.postRunnable(new Runnable() {
                         @Override
                         public void run() {
-                            t.printStackTrace();
+                            debugError(1, "Failed to sync session settings.", t);
 
                             if (callback != null) {
                                 callback.onFailure(t);
@@ -313,8 +320,9 @@ public class BackendHandler {
         final int boardHeight,
         final MatchmakingCallback callback
     ) {
-        if (SessionData.id == null || SessionData.id.trim().isEmpty()) {
+        if (isBlank(SessionData.id)) {
             RuntimeException error = new RuntimeException("SessionData.id is missing");
+            debugError(1, "Cannot start matchmaking.", error);
             if (callback != null) {
                 callback.onFailure(error);
             }
@@ -324,6 +332,12 @@ public class BackendHandler {
         stopMatchmakingTasks();
 
         final int power = SessionData.matchPower <= 0 ? 4 : SessionData.matchPower;
+
+        debug(1, "Starting matchmaking.");
+        debug(2, "Queue request: mode=" + mode
+            + ", gamemode=" + currentGamemode
+            + ", board=" + boardWidth + "x" + boardHeight
+            + ", power=" + power);
 
         backend.queueForMatch(
             SessionData.id,
@@ -344,6 +358,13 @@ public class BackendHandler {
                             acknowledgeInFlight = false;
                             matchFoundNotified = false;
 
+                            debug(1, "Queued successfully.");
+                            debug(2, "Ticket=" + response.ticketId
+                                + ", Mode=" + response.mode
+                                + ", Gamemode=" + response.currentGamemode
+                                + ", Board=" + response.boardWidth + "x" + response.boardHeight
+                                + ", MMR=" + response.mmr);
+
                             if (callback != null) {
                                 callback.onQueued(response);
                             }
@@ -360,6 +381,8 @@ public class BackendHandler {
                         @Override
                         public void run() {
                             SessionData.matchmakingActive = false;
+                            debugError(1, "Failed to queue for matchmaking.", t);
+
                             if (callback != null) {
                                 callback.onFailure(t);
                             }
@@ -371,13 +394,16 @@ public class BackendHandler {
     }
 
     public static void cancelMatchmaking(final CancelMatchmakingCallback callback) {
-        if (SessionData.currentQueueTicketId == null || SessionData.currentQueueTicketId.trim().isEmpty()) {
+        if (isBlank(SessionData.currentQueueTicketId)) {
             RuntimeException error = new RuntimeException("No active queue ticket");
+            debugError(1, "Cannot cancel matchmaking.", error);
             if (callback != null) {
                 callback.onFailure(error);
             }
             return;
         }
+
+        debug(1, "Cancelling matchmaking for ticket: " + SessionData.currentQueueTicketId);
 
         backend.cancelQueue(SessionData.currentQueueTicketId, new BackendConnect.CancelQueueCallback() {
             @Override
@@ -386,6 +412,7 @@ public class BackendHandler {
                     @Override
                     public void run() {
                         if (response.cancelled) {
+                            debug(1, "Queue cancelled successfully.");
                             clearMatchmakingState();
                             if (callback != null) {
                                 callback.onCancelled();
@@ -394,6 +421,9 @@ public class BackendHandler {
                         }
 
                         SessionData.currentMatchId = response.matchId;
+                        debug(1, "Cancel arrived too late. Already matched.");
+                        debug(2, "Match ID: " + response.matchId);
+
                         if (callback != null) {
                             callback.onAlreadyMatched(response);
                         }
@@ -406,6 +436,8 @@ public class BackendHandler {
                 Gdx.app.postRunnable(new Runnable() {
                     @Override
                     public void run() {
+                        debugError(1, "Failed to cancel matchmaking.", t);
+
                         if (callback != null) {
                             callback.onFailure(t);
                         }
@@ -416,13 +448,16 @@ public class BackendHandler {
     }
 
     public static void abandonCurrentMatch(final SimpleCallback callback) {
-        if (SessionData.currentMatchId == null || SessionData.currentMatchId.trim().isEmpty()) {
+        if (isBlank(SessionData.currentMatchId)) {
             RuntimeException error = new RuntimeException("No active match");
+            debugError(1, "Cannot abandon match.", error);
             if (callback != null) {
                 callback.onFailure(error);
             }
             return;
         }
+
+        debug(1, "Abandoning current match: " + SessionData.currentMatchId);
 
         backend.abandonMatch(SessionData.currentMatchId, new BackendConnect.AbandonMatchCallback() {
             @Override
@@ -433,6 +468,10 @@ public class BackendHandler {
                         SessionData.banAmount = response.banAmount;
                         SessionData.currentMatchId = null;
                         SessionData.matchmakingActive = false;
+
+                        debug(1, "Match abandoned successfully.");
+                        debug(2, "New ban amount: " + response.banAmount);
+
                         if (callback != null) {
                             callback.onSuccess();
                         }
@@ -445,6 +484,8 @@ public class BackendHandler {
                 Gdx.app.postRunnable(new Runnable() {
                     @Override
                     public void run() {
+                        debugError(1, "Failed to abandon match.", t);
+
                         if (callback != null) {
                             callback.onFailure(t);
                         }
@@ -455,22 +496,22 @@ public class BackendHandler {
     }
 
     private static void startHeartbeat(final String ticketId) {
+        debug(2, "Starting queue heartbeat for ticket: " + ticketId);
+
         heartbeatTask = Timer.schedule(new Timer.Task() {
             @Override
             public void run() {
                 backend.sendQueueHeartbeat(ticketId, new BackendConnect.QueueHeartbeatCallback() {
                     @Override
                     public void onSuccess(QueueHeartbeatResponse response) {
-                        if (DEBUG > 2) {
-                            System.out.println("Queue heartbeat OK: " + response.ticketId + " | " + response.ticketStatus);
-                        }
+                        debug(3, "Heartbeat OK: ticket=" + response.ticketId
+                            + ", ticketStatus=" + response.ticketStatus
+                            + ", matchId=" + response.matchId);
                     }
 
                     @Override
                     public void onFailure(Throwable t) {
-                        if (DEBUG > 1) {
-                            System.out.println("Queue heartbeat failed: " + t.getMessage());
-                        }
+                        debugError(2, "Queue heartbeat failed.", t);
                     }
                 });
             }
@@ -478,6 +519,8 @@ public class BackendHandler {
     }
 
     private static void startStatusPolling(final String ticketId, final MatchmakingCallback callback) {
+        debug(2, "Starting matchmaking status polling for ticket: " + ticketId);
+
         statusPollTask = Timer.schedule(new Timer.Task() {
             @Override
             public void run() {
@@ -490,7 +533,13 @@ public class BackendHandler {
                                 SessionData.currentQueueTicketId = response.ticketId;
                                 SessionData.currentMatchId = response.matchId;
 
+                                debug(3, "Status poll: ticketStatus=" + response.ticketStatus
+                                    + ", matchStatus=" + response.matchStatus
+                                    + ", matchId=" + response.matchId
+                                    + ", ready=" + response.ready);
+
                                 if ("CANCELLED".equals(response.ticketStatus) || "EXPIRED".equals(response.ticketStatus)) {
+                                    debug(1, "Matchmaking cancelled or expired.");
                                     clearMatchmakingState();
                                     if (callback != null) {
                                         callback.onCancelled();
@@ -498,9 +547,15 @@ public class BackendHandler {
                                     return;
                                 }
 
-                                if (response.matchId != null && "MATCH_FOUND".equals(response.matchStatus)) {
+                                if (response.matchId != null && response.matchId.trim().length() > 0
+                                    && "MATCH_FOUND".equals(response.matchStatus)) {
+
                                     if (!matchFoundNotified) {
                                         matchFoundNotified = true;
+                                        debug(1, "Match found.");
+                                        debug(2, "Match ID=" + response.matchId
+                                            + ", Opponent=" + response.opponentUsername);
+
                                         if (callback != null) {
                                             callback.onMatchFound(response);
                                         }
@@ -508,6 +563,8 @@ public class BackendHandler {
 
                                     if (!response.playerAcknowledged && !acknowledgeInFlight) {
                                         acknowledgeInFlight = true;
+                                        debug(2, "Acknowledging match: " + response.matchId);
+
                                         backend.acknowledgeMatch(response.matchId, new BackendConnect.AcknowledgeMatchCallback() {
                                             @Override
                                             public void onSuccess(final AcknowledgeMatchResponse ackResponse) {
@@ -516,6 +573,10 @@ public class BackendHandler {
                                                     public void run() {
                                                         acknowledgeInFlight = false;
                                                         SessionData.currentMatchId = ackResponse.matchId;
+
+                                                        debug(2, "Match acknowledged successfully.");
+                                                        debug(3, "Ack result: bothAcknowledged=" + ackResponse.bothAcknowledged
+                                                            + ", ready=" + ackResponse.ready);
                                                     }
                                                 });
                                             }
@@ -526,9 +587,7 @@ public class BackendHandler {
                                                     @Override
                                                     public void run() {
                                                         acknowledgeInFlight = false;
-                                                        if (DEBUG > 1) {
-                                                            t.printStackTrace();
-                                                        }
+                                                        debugError(2, "Failed to acknowledge match.", t);
                                                     }
                                                 });
                                             }
@@ -548,6 +607,12 @@ public class BackendHandler {
                                     clearMatchmakingTasksOnly();
                                     SessionData.matchmakingActive = false;
 
+                                    debug(1, "Match is ready.");
+                                    debug(2, "Match ID=" + response.matchId
+                                        + ", Opponent=" + response.opponentUsername
+                                        + ", Board=" + response.boardWidth + "x" + response.boardHeight);
+                                    debug(3, "Board letters: " + response.boardLetters);
+
                                     if (callback != null) {
                                         callback.onMatchReady(response);
                                     }
@@ -561,9 +626,7 @@ public class BackendHandler {
                         Gdx.app.postRunnable(new Runnable() {
                             @Override
                             public void run() {
-                                if (DEBUG > 1) {
-                                    System.out.println("Queue status polling failed: " + t.getMessage());
-                                }
+                                debugError(2, "Queue status polling failed.", t);
                             }
                         });
                     }
@@ -573,6 +636,8 @@ public class BackendHandler {
     }
 
     private static void clearMatchmakingState() {
+        debug(2, "Clearing matchmaking state.");
+
         clearMatchmakingTasksOnly();
         SessionData.matchmakingActive = false;
         SessionData.currentQueueTicketId = null;
@@ -586,16 +651,21 @@ public class BackendHandler {
         if (heartbeatTask != null) {
             heartbeatTask.cancel();
             heartbeatTask = null;
+            debug(3, "Heartbeat task cancelled.");
         }
+
         if (statusPollTask != null) {
             statusPollTask.cancel();
             statusPollTask = null;
+            debug(3, "Status polling task cancelled.");
         }
+
         acknowledgeInFlight = false;
         matchFoundNotified = false;
     }
 
     private static void stopMatchmakingTasks() {
+        debug(3, "Stopping existing matchmaking tasks.");
         clearMatchmakingTasksOnly();
     }
 
@@ -624,7 +694,7 @@ public class BackendHandler {
         SessionData.mmr4x5 = playerData.mmr4x5;
         SessionData.mmr5x5 = playerData.mmr5x5;
 
-        if (playerData.authToken != null && !playerData.authToken.trim().isEmpty()) {
+        if (!isBlank(playerData.authToken)) {
             SessionData.authToken = playerData.authToken.trim();
         }
     }
@@ -643,5 +713,42 @@ public class BackendHandler {
 
     private static String generateGuestUsername() {
         return "Player-" + UUID.randomUUID().toString().substring(0, 8);
+    }
+
+    private static Preferences getPreferences() {
+        String profile = System.getenv("LETTERLINK_PROFILE");
+
+        if (profile == null || profile.trim().isEmpty()) {
+            profile = "Default";
+        } else {
+            profile = profile.trim();
+        }
+
+        String prefsName = "LetterLink-" + profile;
+        System.out.println("[BackendHandler] Using preferences: " + prefsName);
+
+        return Gdx.app.getPreferences(prefsName);
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private static void debug(int level, String message) {
+        if (DEBUG >= level) {
+            System.out.println("[BackendHandler] " + message);
+        }
+    }
+
+    private static void debugError(int level, String message, Throwable t) {
+        if (DEBUG >= level) {
+            System.out.println("[BackendHandler] " + message);
+            if (t != null) {
+                System.out.println("[BackendHandler] " + t.getClass().getSimpleName() + ": " + t.getMessage());
+                if (DEBUG >= 3) {
+                    t.printStackTrace();
+                }
+            }
+        }
     }
 }

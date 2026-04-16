@@ -47,7 +47,7 @@ public class PointsDisplay extends Agent {
 
     @Override
     public void frame() {
-        getPage().addTimer(createAnimationTimer());
+        getPage().add(createAnimationTimer());
     }
 
     @Override

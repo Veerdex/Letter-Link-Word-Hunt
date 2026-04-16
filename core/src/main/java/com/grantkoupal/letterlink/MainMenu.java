@@ -10,7 +10,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.grantkoupal.letterlink.backend.data.SessionData;
 import com.grantkoupal.letterlink.quantum.core.*;
-import com.grantkoupal.letterlink.quantum.core.Process;
+import com.grantkoupal.letterlink.quantum.core.Resize;
 import com.grantkoupal.letterlink.quantum.paint.Textures;
 
 public class MainMenu extends Page {
@@ -108,9 +108,12 @@ public class MainMenu extends Page {
     }
 
     @Override
-    public void initialize() {
-
+    public void frame(){
+        Source.setRatio(1500, 3000);
     }
+
+    @Override
+    public void initialize() {}
 
     private Texture getTexture(String name){
         Texture t = new Texture(Source.getAsset("MainMenu/" + name + ".png"));
@@ -164,37 +167,30 @@ public class MainMenu extends Page {
                 name = name.substring(0, 11) + "...";
             }
 
-            float yScale = Source.getScreenHeight() / 3000f;
-            float xScale = Source.getScreenWidth() / 1500f;
-            scale = Math.min(xScale, yScale);
             centerX = Source.getScreenWidth() / 2f;
             centerY = Source.getScreenHeight() / 2f;
             updatePosition();
             updateScale();
             updateFont();
 
-            addAnimation(new Animation(System.nanoTime(), Animation.INDEFINITE, new Action(){
+            add(new Animation(Animation.INDEFINITE, new Action(){
                 @Override
                 public void run(float delta) {
                     buttonUpdate(isClick(), delta);
                 }
             }));
 
-            addResize(new Process(){
+            add(new Resize(new Resizable() {
                 @Override
-                public boolean run() {
-                    float yScale = Source.getScreenHeight() / 3000f;
-                    float xScale = Source.getScreenWidth() / 1500f;
-                    scale = Math.min(xScale, yScale);
+                public void run() {
                     centerX = Source.getScreenWidth() / 2f;
                     centerY = Source.getScreenHeight() / 2f;
 
                     updateFont();
                     updatePosition();
                     updateScale();
-                    return true;
                 }
-            });
+            }));
         }
 
         private void buttonUpdate(boolean click, float delta){
@@ -211,12 +207,13 @@ public class MainMenu extends Page {
                 gamemodeScale = 1f;
                 return;
             }
+
             boolean burgerHover = isHover(burgerX, burgerY, 300 * scale, 300 * scale);
             boolean gearHover = isHover(gearX, gearY, 300 * scale, 300 * scale);
             boolean playHover = isHover(playX, playY, 800 * scale, 250 * scale);
             boolean gamemodeHover = isHover(gamemodeX, gamemodeY, 950 * scale, 200 * scale);
 
-            if(click && Math.sqrt(Math.pow(Source.getScreenMouseX() - Source.getScreenWidth() / 2f, 2) + Math.pow(Source.getScreenMouseY() - Source.getScreenHeight() / 2f, 2)) < 400 * scale){
+            if(click && Math.sqrt(Math.pow(Source.getMouseX() - Source.getScreenWidth() / 2f, 2) + Math.pow(Source.getMouseY() - Source.getScreenHeight() / 2f, 2)) < 400 * scale){
                 switch(SessionData.currentBoardWidth + SessionData.currentBoardHeight){
                     case 8 : SessionData.currentBoardHeight = 5; break;
                     case 9 : SessionData.currentBoardWidth = 5; break;
@@ -230,9 +227,13 @@ public class MainMenu extends Page {
                 } else if(gearHover){
 
                 } else if(playHover){
-                    Board.setBoardDimensions(SessionData.currentBoardWidth, SessionData.currentBoardHeight);
-                    LoadingBoardPage lbp = new LoadingBoardPage();
-                    Source.loadNewPage(lbp);
+                    if(SessionData.mode.equals("practice")){
+                        LoadingBoardPage lbp = new LoadingBoardPage();
+                        Source.loadNewPage(lbp);
+                    } else {
+                        FindMatch fm = new FindMatch();
+                        Source.loadNewPage(fm);
+                    }
                 } else if(gamemodeHover){
                     actionsEnabled = false;
                     gamemodeSelection.popUp();
@@ -302,7 +303,7 @@ public class MainMenu extends Page {
         }
 
         private boolean isHover(float x, float y, float width, float height){
-            return Math.abs(Source.getScreenMouseX() - x) < width / 2 && Math.abs(Source.getScreenMouseY() - y) < height / 2;
+            return Math.abs(Source.getMouseX() - x) < width / 2 && Math.abs(Source.getMouseY() - y) < height / 2;
         }
 
         private void updateFont(){
@@ -359,6 +360,14 @@ public class MainMenu extends Page {
 
         @Override
         public void draw(ShapeRenderer sr, SpriteBatch sb) {
+            scale = Source.getScale();
+            centerX = Source.getScreenWidth() / 2f;
+            centerY = Source.getScreenHeight() / 2f;
+
+            updateFont();
+            updatePosition();
+            updateScale();
+
             sb.begin();
             drawBackground(sb);
             borderGradient(sb);

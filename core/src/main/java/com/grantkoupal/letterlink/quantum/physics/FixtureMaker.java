@@ -2,12 +2,14 @@ package com.grantkoupal.letterlink.quantum.physics;
 
 import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
-import com.badlogic.gdx.physics.box2d.PolygonShape;import com.grantkoupal.letterlink.quantum.core.Manager;
+import com.badlogic.gdx.physics.box2d.PolygonShape;
+
+import static com.grantkoupal.letterlink.quantum.physics.Box2DManager.PPM;
 
 public class FixtureMaker{
     public static FixtureDef makeRect(float width, float height){
-        width /= 2 * Manager.PPM;
-        height /= 2 * Manager.PPM;
+        width /= 2 * PPM;
+        height /= 2 * PPM;
         PolygonShape shape = new PolygonShape();
         shape.set(new float[]{
             -width, -height,
@@ -27,8 +29,8 @@ public class FixtureMaker{
     }
 
     public static FixtureDef makeRect(float width, float height, float density, float friction, float restitution){
-        width /= 2 * Manager.PPM;
-        height /= 2 * Manager.PPM;
+        width /= 2 * PPM;
+        height /= 2 * PPM;
         PolygonShape shape = new PolygonShape();
         shape.set(new float[]{
             -width, -height,
@@ -48,7 +50,7 @@ public class FixtureMaker{
 
     public static FixtureDef makePoly(float[] points, float density, float friction, float restitution){
         for(int i = 0; i < points.length; i++){
-            points[i] /= Manager.PPM;
+            points[i] /= PPM;
         }
         PolygonShape shape = new PolygonShape();
         shape.set(points);
@@ -64,7 +66,7 @@ public class FixtureMaker{
 
     public static FixtureDef makePoly(float[] points){
         for(int i = 0; i < points.length; i++){
-            points[i] /= Manager.PPM;
+            points[i] /= PPM;
         }
         PolygonShape shape = new PolygonShape();
         shape.set(points);
@@ -81,7 +83,7 @@ public class FixtureMaker{
     public static FixtureDef makeCircle(float radius){
         CircleShape shape = new CircleShape();
 
-        shape.setRadius(radius / Manager.PPM);
+        shape.setRadius(radius / PPM);
 
         FixtureDef fixture = new FixtureDef();
         fixture.shape = shape;
@@ -95,7 +97,7 @@ public class FixtureMaker{
     public static FixtureDef makeCircle(float radius, float density, float friction, float restitution){
         CircleShape shape = new CircleShape();
 
-        shape.setRadius(radius / Manager.PPM);
+        shape.setRadius(radius / PPM);
 
         FixtureDef fixture = new FixtureDef();
         fixture.shape = shape;

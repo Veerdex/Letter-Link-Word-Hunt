@@ -3,24 +3,52 @@ package com.grantkoupal.letterlink.quantum.core;
 public class Animation{
 
     public static final int INDEFINITE = -1;
-    private float cutoff = -1;
+    private long cutoff = -1;
     private boolean isFinished = false;
+    private long duration;
     private Action action;
     private Runnable onEnd;
+    public boolean isActive = false;
 
     /**
      * Gives the ability to run processes on each frame
-     * @param nanoTime Time when the animation was created
      * @param duration Total time the program will run
      * @param action The process which will be performed on each frame
      */
-    public Animation(long nanoTime, long duration, Action action){
+    public Animation(long duration, Action action){
         if(duration != -1){
-            this.cutoff = nanoTime + duration * 1000000f;
+            this.cutoff = System.nanoTime() + duration * 1000000L;
         }
 
+        this.duration = duration;
         this.action = action;
         this.action.parentAnimation = this;
+    }
+
+    public void setUp(){
+        isFinished = false;
+        if(duration == -1) return;
+        this.cutoff = System.nanoTime() + duration * 1000000L;
+    }
+
+    public void restart(){
+        setUp();
+    }
+
+    protected void setDuration(long f){
+        duration = f;
+    }
+
+    protected long getDuration(){
+        return duration;
+    }
+
+    protected void setAction(Action a){
+        action = a;
+    }
+
+    protected Action getAction(){
+        return action;
     }
 
     /**

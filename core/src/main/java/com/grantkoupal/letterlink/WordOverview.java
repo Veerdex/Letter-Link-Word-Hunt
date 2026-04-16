@@ -75,6 +75,11 @@ public class WordOverview extends Page {
     }
 
     @Override
+    public void frame() {
+
+    }
+
+    @Override
     public void dispose() {
         wordBackgroundTexture.dispose();
     }
@@ -123,7 +128,7 @@ public class WordOverview extends Page {
 
             currentListSize = foundWords.size();
 
-            addAnimation(new Animation(System.nanoTime(), Animation.INDEFINITE, new Action(){
+            add(new Animation(Animation.INDEFINITE, new Action(){
                 @Override
                 public void run(float delta) {
                     boolean click = false;
@@ -132,16 +137,16 @@ public class WordOverview extends Page {
                             click = true;
                             mouseDown = true;
                             lastClick = System.currentTimeMillis();
-                            clickX = Source.getScreenMouseX();
-                            clickY = Source.getScreenMouseY();
+                            clickX = Source.getMouseX();
+                            clickY = Source.getMouseY();
                         }
                     } else {
                         if(mouseDown && System.currentTimeMillis() - lastClick < 150 &&
-                            Math.abs(clickX - Source.getScreenMouseX()) < 10 * scale &&
-                            Math.abs(clickY - Source.getScreenMouseY()) < 10 * scale &&
-                            Math.abs(centerX - Source.getScreenMouseX()) < 600 * scale &&
-                            Math.abs((centerY - 225 * scale) - Source.getScreenMouseY()) < 1200 * scale){
-                            if(Source.getScreenMouseX() > centerX){
+                            Math.abs(clickX - Source.getMouseX()) < 10 * scale &&
+                            Math.abs(clickY - Source.getMouseY()) < 10 * scale &&
+                            Math.abs(centerX - Source.getMouseX()) < 600 * scale &&
+                            Math.abs((centerY - 225 * scale) - Source.getMouseY()) < 1200 * scale){
+                            if(Source.getMouseX() > centerX){
                                 mode++;
                             } else {
                                 mode--;
@@ -161,7 +166,7 @@ public class WordOverview extends Page {
                         mouseDown = false;
                     }
                     if (Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
-                        if(Math.abs(centerX - Source.getScreenMouseX()) < 600 * scale && Math.abs((centerY - 225 * scale) - Source.getScreenMouseY()) < 1200 * scale){
+                        if(Math.abs(centerX - Source.getMouseX()) < 600 * scale && Math.abs((centerY - 225 * scale) - Source.getMouseY()) < 1200 * scale){
                             scrollMotion = -Gdx.input.getDeltaY() * scale;
                         }
                     }
@@ -179,7 +184,7 @@ public class WordOverview extends Page {
                     }
                     applyScrollFriction(delta);
                     float yPos = centerY * 2 - 300 * scale;
-                    if(Math.abs(Source.getScreenMouseX() - centerX) < 400 * scale && Math.abs(Source.getScreenMouseY() - yPos) < 150 * scale){
+                    if(Math.abs(Source.getMouseX() - centerX) < 400 * scale && Math.abs(Source.getMouseY() - yPos) < 150 * scale){
                         if(click){
                             backButtonScale = 1;
                             Source.previousPage();

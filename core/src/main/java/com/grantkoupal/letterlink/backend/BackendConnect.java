@@ -19,6 +19,12 @@ public class BackendConnect {
 
     private static final String BASE_URL = "https://letter-link-backend-production.up.railway.app";
 
+    // 0 = silent
+    // 1 = errors only
+    // 2 = request summaries + status codes
+    // 3 = raw responses, auth previews, stack traces
+    private static final int DEBUG = 3;
+
     private interface BaseCallback<T> {
         void onSuccess(T value);
         void onFailure(Throwable t);
@@ -68,8 +74,8 @@ public class BackendConnect {
         String url = BASE_URL + "/players/register";
         String body = "{\"username\":\"" + escapeJson(username) + "\"}";
 
-        System.out.println("REGISTER URL: " + url);
-        System.out.println("REGISTER BODY: " + body);
+        debug(2, "REGISTER URL: " + url);
+        debug(3, "REGISTER BODY: " + body);
 
         HttpRequest request = buildPostRequest(url, body, false);
         sendRequest("REGISTER", request, callback, new ResponseParser<RegisterResponse>() {
@@ -84,8 +90,8 @@ public class BackendConnect {
         String url = BASE_URL + "/players/bootstrap-session";
         String body = "{\"id\":\"" + escapeJson(playerId) + "\"}";
 
-        System.out.println("BOOTSTRAP SESSION URL: " + url);
-        System.out.println("BOOTSTRAP SESSION BODY: " + body);
+        debug(2, "BOOTSTRAP SESSION URL: " + url);
+        debug(3, "BOOTSTRAP SESSION BODY: " + body);
 
         HttpRequest request = buildPostRequest(url, body, false);
         sendRequest("BOOTSTRAP SESSION", request, callback, new ResponseParser<PlayerData>() {
@@ -99,10 +105,10 @@ public class BackendConnect {
     public void getPlayerData(String playerId, PlayerDataCallback callback) {
         String url = BASE_URL + "/players/get?id=" + encode(playerId);
 
-        System.out.println("GET PLAYER URL: " + url);
-        System.out.println("GET PLAYER AUTH PLAYER ID: " + SessionData.id);
-        System.out.println("GET PLAYER AUTH TOKEN PRESENT: " + (SessionData.authToken != null && !SessionData.authToken.trim().isEmpty()));
-        System.out.println("GET PLAYER AUTH TOKEN PREVIEW: " + previewToken(SessionData.authToken));
+        debug(2, "GET PLAYER URL: " + url);
+        debug(3, "GET PLAYER AUTH PLAYER ID: " + SessionData.id);
+        debug(3, "GET PLAYER AUTH TOKEN PRESENT: " + (SessionData.authToken != null && !SessionData.authToken.trim().isEmpty()));
+        debug(3, "GET PLAYER AUTH TOKEN PREVIEW: " + previewToken(SessionData.authToken));
 
         HttpRequest request = buildGetRequest(url, true);
         sendRequest("GET PLAYER", request, callback, new ResponseParser<PlayerData>() {
@@ -116,7 +122,7 @@ public class BackendConnect {
     public void getPlayerByUsername(String username, PlayerDataCallback callback) {
         String url = BASE_URL + "/players/by-username?username=" + encode(username);
 
-        System.out.println("GET PLAYER BY USERNAME URL: " + url);
+        debug(2, "GET PLAYER BY USERNAME URL: " + url);
 
         HttpRequest request = buildGetRequest(url, true);
         sendRequest("GET PLAYER BY USERNAME", request, callback, new ResponseParser<PlayerData>() {
@@ -130,7 +136,7 @@ public class BackendConnect {
     public void getBanAmount(String playerId, BanAmountCallback callback) {
         String url = BASE_URL + "/players/ban-amount?id=" + encode(playerId);
 
-        System.out.println("GET BAN AMOUNT URL: " + url);
+        debug(2, "GET BAN AMOUNT URL: " + url);
 
         HttpRequest request = buildGetRequest(url, true);
         sendRequest("GET BAN AMOUNT", request, callback, new ResponseParser<BanAmountResponse>() {
@@ -166,8 +172,8 @@ public class BackendConnect {
             + "\"currentBoardHeight\":" + currentBoardHeight
             + "}";
 
-        System.out.println("UPDATE SETTINGS URL: " + url);
-        System.out.println("UPDATE SETTINGS BODY: " + body);
+        debug(2, "UPDATE SETTINGS URL: " + url);
+        debug(3, "UPDATE SETTINGS BODY: " + body);
 
         HttpRequest request = buildPostRequest(url, body, true);
         sendRequest("UPDATE SETTINGS", request, callback, new ResponseParser<UpdateSettingsResponse>() {
@@ -191,8 +197,8 @@ public class BackendConnect {
             + "\"lossesToAdd\":" + lossesToAdd
             + "}";
 
-        System.out.println("UPDATE STATS URL: " + url);
-        System.out.println("UPDATE STATS BODY: " + body);
+        debug(2, "UPDATE STATS URL: " + url);
+        debug(3, "UPDATE STATS BODY: " + body);
 
         HttpRequest request = buildPostRequest(url, body, true);
         sendRequest("UPDATE STATS", request, callback, new ResponseParser<UpdateStatsResponse>() {
@@ -216,8 +222,8 @@ public class BackendConnect {
             + "\"mmr\":" + mmr
             + "}";
 
-        System.out.println("UPDATE MMR URL: " + url);
-        System.out.println("UPDATE MMR BODY: " + body);
+        debug(2, "UPDATE MMR URL: " + url);
+        debug(3, "UPDATE MMR BODY: " + body);
 
         HttpRequest request = buildPostRequest(url, body, true);
         sendRequest("UPDATE MMR", request, callback, new ResponseParser<UpdateMmrResponse>() {
@@ -247,8 +253,8 @@ public class BackendConnect {
             + "\"power\":" + power
             + "}";
 
-        System.out.println("QUEUE URL: " + url);
-        System.out.println("QUEUE BODY: " + body);
+        debug(2, "QUEUE URL: " + url);
+        debug(3, "QUEUE BODY: " + body);
 
         HttpRequest request = buildPostRequest(url, body, true);
         sendRequest("QUEUE", request, callback, new ResponseParser<QueueTicketResponse>() {
@@ -265,8 +271,8 @@ public class BackendConnect {
             + "\"ticketId\":\"" + escapeJson(ticketId) + "\""
             + "}";
 
-        System.out.println("CANCEL QUEUE URL: " + url);
-        System.out.println("CANCEL QUEUE BODY: " + body);
+        debug(2, "CANCEL QUEUE URL: " + url);
+        debug(3, "CANCEL QUEUE BODY: " + body);
 
         HttpRequest request = buildPostRequest(url, body, true);
         sendRequest("CANCEL QUEUE", request, callback, new ResponseParser<CancelQueueResponse>() {
@@ -283,6 +289,9 @@ public class BackendConnect {
             + "\"ticketId\":\"" + escapeJson(ticketId) + "\""
             + "}";
 
+        debug(3, "QUEUE HEARTBEAT URL: " + url);
+        debug(3, "QUEUE HEARTBEAT BODY: " + body);
+
         HttpRequest request = buildPostRequest(url, body, true);
         sendRequest("QUEUE HEARTBEAT", request, callback, new ResponseParser<QueueHeartbeatResponse>() {
             @Override
@@ -294,6 +303,8 @@ public class BackendConnect {
 
     public void getQueueStatus(String ticketId, MatchStatusCallback callback) {
         String url = BASE_URL + "/matchmaking/status?ticketId=" + encode(ticketId);
+
+        debug(3, "QUEUE STATUS URL: " + url);
 
         HttpRequest request = buildGetRequest(url, true);
         sendRequest("QUEUE STATUS", request, callback, new ResponseParser<MatchStatusResponse>() {
@@ -310,6 +321,9 @@ public class BackendConnect {
             + "\"matchId\":\"" + escapeJson(matchId) + "\""
             + "}";
 
+        debug(2, "ACKNOWLEDGE MATCH URL: " + url);
+        debug(3, "ACKNOWLEDGE MATCH BODY: " + body);
+
         HttpRequest request = buildPostRequest(url, body, true);
         sendRequest("ACKNOWLEDGE MATCH", request, callback, new ResponseParser<AcknowledgeMatchResponse>() {
             @Override
@@ -324,6 +338,9 @@ public class BackendConnect {
         String body = "{"
             + "\"matchId\":\"" + escapeJson(matchId) + "\""
             + "}";
+
+        debug(2, "ABANDON MATCH URL: " + url);
+        debug(3, "ABANDON MATCH BODY: " + body);
 
         HttpRequest request = buildPostRequest(url, body, true);
         sendRequest("ABANDON MATCH", request, callback, new ResponseParser<AbandonMatchResponse>() {
@@ -390,8 +407,8 @@ public class BackendConnect {
                     int statusCode = httpResponse.getStatus() == null ? -1 : httpResponse.getStatus().getStatusCode();
                     String result = httpResponse.getResultAsString();
 
-                    System.out.println(label + " STATUS: " + statusCode);
-                    System.out.println(label + " RAW RESPONSE: " + result);
+                    debug(2, label + " STATUS: " + statusCode);
+                    debug(3, label + " RAW RESPONSE: " + result);
 
                     if (statusCode < 200 || statusCode >= 300) {
                         String errorMessage = extractApiError(result);
@@ -418,19 +435,13 @@ public class BackendConnect {
 
             @Override
             public void failed(Throwable t) {
-                System.out.println(label + " REQUEST FAILED:");
-                if (t != null) {
-                    t.printStackTrace();
-                    System.out.println(label + " FAILURE TYPE: " + t.getClass().getName());
-                    System.out.println(label + " FAILURE MESSAGE: " + t.getMessage());
-                } else {
-                    System.out.println(label + " FAILURE: throwable was null");
-                }
+                debugError(1, label + " REQUEST FAILED", t);
                 callback.onFailure(t == null ? new RuntimeException("Unknown request failure") : t);
             }
 
             @Override
             public void cancelled() {
+                debug(1, label + " request cancelled");
                 callback.onFailure(new RuntimeException(label + " request cancelled"));
             }
         });
@@ -708,5 +719,23 @@ public class BackendConnect {
         }
 
         return trimmed.substring(0, 8) + "...";
+    }
+
+    private static void debug(int level, String message) {
+        if (DEBUG >= level) {
+            System.out.println("[BackendConnect] " + message);
+        }
+    }
+
+    private static void debugError(int level, String message, Throwable t) {
+        if (DEBUG >= level) {
+            System.out.println("[BackendConnect] " + message);
+            if (t != null) {
+                System.out.println("[BackendConnect] " + t.getClass().getSimpleName() + ": " + t.getMessage());
+                if (DEBUG >= 3) {
+                    t.printStackTrace();
+                }
+            }
+        }
     }
 }

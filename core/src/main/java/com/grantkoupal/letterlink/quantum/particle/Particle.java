@@ -105,7 +105,7 @@ public abstract class Particle extends Agent {
 
     public Animation getAnimation() {
 
-        Animation a = new Animation(System.nanoTime(), duration, new Action() {
+        Animation a = new Animation(duration, new Action() {
             @Override
             public void run(float delta) {
                 totalTime += delta;

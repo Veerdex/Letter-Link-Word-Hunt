@@ -17,11 +17,11 @@ public class MusicHandler{
         return currentMusic;
     }
 
-    public static void updateVolume(){
+    public static void updateVolume(float volume){
         if(currentMusic != null){
-            currentMusic.setVolume(Manager.getMasterVolume() * Manager.getMusicVolume());
+            currentMusic.setVolume(volume);
         }
-        volume = Manager.getMasterVolume() * Manager.getMusicVolume();
+        MusicHandler.volume = volume;
     }
 
     public static void play(Music m){
@@ -83,7 +83,7 @@ public class MusicHandler{
                 transitioning = false;
             }
         });
-        Manager.addTimer(t);
+        Manager.add(t);
     }
 
     public static void setTransitionTime(float f){

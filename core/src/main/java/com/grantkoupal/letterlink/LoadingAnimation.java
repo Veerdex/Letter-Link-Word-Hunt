@@ -37,14 +37,14 @@ public class LoadingAnimation extends Agent {
         this.y = y;
 
         // Create the animation
-        animation = new Animation(System.nanoTime(), Animation.INDEFINITE, new Action() {
+        animation = new Animation(Animation.INDEFINITE, new Action() {
             @Override
             public void run(float delta) {
                 time += delta * 2.5f; // Animation speed
             }
         });
 
-        p.addAnimation(animation);
+        p.add(animation);
     }
 
     @Override

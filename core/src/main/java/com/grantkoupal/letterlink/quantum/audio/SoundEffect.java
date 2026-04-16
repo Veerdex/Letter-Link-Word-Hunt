@@ -1,7 +1,7 @@
 package com.grantkoupal.letterlink.quantum.audio;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.audio.Sound;import com.grantkoupal.letterlink.quantum.core.Manager;
+import com.badlogic.gdx.audio.Sound;
 
 public class SoundEffect {
     private Sound s;
@@ -16,7 +16,7 @@ public class SoundEffect {
         if(System.currentTimeMillis() > previousTime + density){
             previousTime = System.currentTimeMillis();
             long id = s.play(volume, pitch, pan);
-            s.setVolume(id, Manager.getMasterVolume() * Manager.getSFXVolume());
+            s.setVolume(id, volume);
         }
     }
 

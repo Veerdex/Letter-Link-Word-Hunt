@@ -290,16 +290,16 @@ public class Board extends Agent {
 
     private void registerTileAnimations() {
         for (Animation animation : tileAnimations) {
-            getPage().addAnimation(animation);
+            getPage().add(animation);
         }
     }
 
     private void registerWordCheckAnimation() {
-        getPage().addAnimation(createWordCheckAnimation());
+        getPage().add(createWordCheckAnimation());
     }
 
     private void registerMouseTracker() {
-        getPage().addTimer(new Timer(0.01f, Timer.INDEFINITE, new TimeFrame() {
+        getPage().add(new Timer(0.01f, Timer.INDEFINITE, new TimeFrame() {
             @Override
             public void run(long iteration) {
                 updateMouseDelta();
@@ -308,10 +308,10 @@ public class Board extends Agent {
     }
 
     private void updateMouseDelta() {
-        int dx = Source.getScreenMouseX() - prevMouseX;
-        int dy = Source.getScreenMouseY() - prevMouseY;
-        prevMouseX = Source.getScreenMouseX();
-        prevMouseY = Source.getScreenMouseY();
+        int dx = Source.getMouseX() - prevMouseX;
+        int dy = Source.getMouseY() - prevMouseY;
+        prevMouseX = Source.getMouseX();
+        prevMouseY = Source.getMouseY();
 
         deltaX += dx;
         deltaY += dy;
@@ -325,7 +325,7 @@ public class Board extends Agent {
     }
 
     private static Animation createWordCheckAnimation() {
-        return new Animation(System.nanoTime(), Animation.INDEFINITE, new Action() {
+        return new Animation(Animation.INDEFINITE, new Action() {
             @Override
             public void run(float delta) {
                 handleWordSubmission();
@@ -887,8 +887,8 @@ public class Board extends Agent {
     }
 
     private static void drawTraceFromMouseToFirstTile(ShapeRenderer sr) {
-        float mouseX = Source.getScreenMouseX();
-        float mouseY = Source.getScreenHeight() - Source.getScreenMouseY();
+        float mouseX = Source.getMouseX();
+        float mouseY = Source.getScreenHeight() - Source.getMouseY();
 
         float firstTileX = convertToScreenX(tileChain.get(0).x);
         float firstTileY = convertToScreenY(tileChain.get(0).y);
@@ -1025,7 +1025,7 @@ public class Board extends Agent {
         }
 
         private void createAnimation() {
-            animation = new Animation(System.nanoTime(), Animation.INDEFINITE, new Action() {
+            animation = new Animation(Animation.INDEFINITE, new Action() {
                 @Override
                 public void run(float delta) {
                     if (menuOpen) {
@@ -1196,8 +1196,8 @@ public class Board extends Agent {
             float tileX = x * (100 * scale) + boardX - width * (50 * scale) + 50 * scale;
             float tileY = y * (100 * scale) + boardY - height * (50 * scale) + 50 * scale;
 
-            float deltaX = Source.getScreenMouseX() - tileX;
-            float deltaY = Source.getScreenMouseY() - tileY;
+            float deltaX = Source.getMouseX() - tileX;
+            float deltaY = Source.getMouseY() - tileY;
 
             return Math.sqrt(deltaX * deltaX + deltaY * deltaY) < radius * scale;
         }

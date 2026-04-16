@@ -4,6 +4,8 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.grantkoupal.letterlink.backend.BackendHandler;
 import com.grantkoupal.letterlink.backend.data.SessionData;
 import com.grantkoupal.letterlink.quantum.core.Manager;
+import com.grantkoupal.letterlink.quantum.core.TimeFrame;
+import com.grantkoupal.letterlink.quantum.core.Timer;
 import com.grantkoupal.letterlink.quantum.font.FontProvider;
 
 public class Source extends Manager {
@@ -16,6 +18,8 @@ public class Source extends Manager {
 
     @Override
     public void setUp() {
+
+        saveDataEvery10Seconds();
 
         BackendHandler.startUp(new BackendHandler.StartupCallback() {
             @Override
@@ -40,6 +44,16 @@ public class Source extends Manager {
         //loadNewPage(loadingPage);
 
         //Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
+    }
+
+    private void saveDataEvery10Seconds(){
+        Timer t = new Timer(10, Timer.INDEFINITE, new TimeFrame(){
+            @Override
+            public void run(long iteration) {
+                DataManager.saveData();
+            }
+        });
+        add(t);
     }
 
     /**

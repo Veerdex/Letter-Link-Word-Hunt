@@ -2,6 +2,7 @@ package com.grantkoupal.letterlink;
 
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
+import com.grantkoupal.letterlink.backend.BackendHandler;
 
 import java.util.Scanner;
 
@@ -180,6 +181,20 @@ public class DataManager {
 
         iconTexture = new Texture(ICON_PATH + name);
         iconTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+    }
+
+    public static void saveData(){
+        BackendHandler.syncSessionSettingsToServer(new BackendHandler.SimpleCallback() {
+            @Override
+            public void onSuccess() {
+                System.out.println("User data saved.");
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+                t.printStackTrace();
+            }
+        });
     }
 
     // ========== Resource Cleanup ==========

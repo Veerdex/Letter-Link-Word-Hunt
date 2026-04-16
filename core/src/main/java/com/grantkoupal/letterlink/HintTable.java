@@ -145,7 +145,7 @@ public class HintTable extends Agent {
      * Sets up continuous scroll animation that responds to mouse input.
      */
     private void setupScrollAnimation() {
-        Source.addAnimation(new Animation(System.nanoTime(), Animation.INDEFINITE, new Action() {
+        Source.add(new Animation(Animation.INDEFINITE, new Action() {
             @Override
             public void run(float delta) {
                 if (!Board.menuOpen) {
@@ -175,9 +175,9 @@ public class HintTable extends Agent {
      * Checks if mouse is hovering over the table area (left side of screen).
      */
     private boolean isMouseOverTable() {
-        return Source.getScreenMouseX() > tableX &&
-            Source.getScreenMouseX() < Source.getScreenWidth() / 2f &&
-            Source.getScreenMouseY() < Source.getScreenHeight() / 2f + TABLE_TOP_THRESHOLD * scale;
+        return Source.getMouseX() > tableX &&
+            Source.getMouseX() < Source.getScreenWidth() / 2f &&
+            Source.getMouseY() < Source.getScreenHeight() / 2f + TABLE_TOP_THRESHOLD * scale;
     }
 
     /**

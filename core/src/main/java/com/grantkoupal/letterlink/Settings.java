@@ -110,8 +110,8 @@ public class Settings extends Agent {
 
         if (click) {
             handleClick(
-                Source.getScreenMouseX(),
-                Source.getScreenMouseY(),
+                Source.getMouseX(),
+                Source.getMouseY(),
                 alignX, musicY, soundY, vibrationY,
                 xCenterX, xCenterY,
                 scale

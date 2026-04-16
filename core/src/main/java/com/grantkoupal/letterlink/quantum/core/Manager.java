@@ -1,27 +1,19 @@
 package com.grantkoupal.letterlink.quantum.core;
 
-import box2dLight.PointLight;
-import box2dLight.RayHandler;
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.Box2D;
-import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.InputListener;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.ScreenUtils;
-import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.grantkoupal.letterlink.quantum.audio.MusicHandler;
 import com.grantkoupal.letterlink.quantum.paint.Textures;
-import com.grantkoupal.letterlink.quantum.physics.EntityContactListener;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -29,16 +21,29 @@ import java.util.List;
 
 public abstract class Manager extends ApplicationAdapter {
 
+    // ----- Mouse -----
+    private static boolean CLICK = false;
+    private static boolean mouseDown = false;
+
+    // ----- Scaling -----
+    private static float SCALE = 1;
+    private static float ratioX = 1000;
+    private static float ratioY = 1000;
+
+    // ----- Additions -----
+    private static final LinkedList<ManagerExtension> extensions = new LinkedList<>();
+
     // ----- Pages -----
-    private static Page[] queue = new Page[3];
+    private static final int cachePages = 3;
+    private static Page[] queue = new Page[cachePages];
     private static Page currentPage;
 
     // ----- Input -----
     public static InputMultiplexer multiplexer = new InputMultiplexer();
 
     // ----- Viewport -----
-    private static Color backgroundColor = Color.WHITE;
-    private static Color outlineColor = Color.BLACK;
+    protected static Color backgroundColor = Color.WHITE;
+    protected static Color outlineColor = Color.BLACK;
     public static OrthographicCamera camera;
     public static Viewport viewport;
     protected static Stage stage;
@@ -47,35 +52,26 @@ public abstract class Manager extends ApplicationAdapter {
     private static boolean isVSync = true;
     private static int FPS = 100;
 
-    // ----- Physics/Lighting -----
-    public static World mainWorld;
-    private static RayHandler rayHandler;
-    private static PointLight skyLight;
-    private static boolean shading = true;
-    public static final short IGNORE_CHANNEL = 0x0002;
-    public static final short LIGHT_CHANNEL = 0x0004;
-    public static final short CONTACT_CHANNEL = 0x0006;
-    public static EntityContactListener ECL;
-    public static final float PPM = 10f;
-    private static OrthographicCamera physicsCamera;
-    private static Viewport physicsViewport;
-
     // ----- System -----
     protected static float totalTime;
     protected static float delta;
     protected static long nanoTime = System.nanoTime();
     protected static boolean printFrameRate = false;
-    protected static List<Renderer> renderers = new LinkedList<Renderer>();
+    protected static final List<Renderer> renderers = new LinkedList<>();
     private static Runnable onClose;
-    private static float masterVolume;
-    private static float musicVolume;
-    private static float SFXVolume;
     private static boolean onDesktop = false;
 
     // ----- Looping -----
-    private static List<Animation> animationList = new ArrayList<Animation>();
-    private static List<Timer> timerList = new ArrayList<Timer>();
-    private static List<Process> resizeList = new ArrayList<Process>();
+    private static final List<Animation> animationList = new ArrayList<>();
+    private static final List<Timer> timerList = new ArrayList<>();
+    private static final List<Resize> resizeList = new ArrayList<>();
+
+    private static final Timer clickDetect = new Timer(250, 1, new TimeFrame(){
+        @Override
+        public void run(long iteration) {
+            mouseDown = false;
+        }
+    });
 
     /**
      * Automatically runs at the beginning of every program and creates
@@ -95,9 +91,6 @@ public abstract class Manager extends ApplicationAdapter {
         stage = new Stage(viewport); // IMPORTANT: use same viewport as your game
         Gdx.input.setInputProcessor(multiplexer);
         multiplexer.addProcessor(stage);
-        stage.draw();
-
-        //mainWorld.love
 
         setUp();
     }
@@ -110,96 +103,13 @@ public abstract class Manager extends ApplicationAdapter {
                     a.fire(new InputEvent() {{
                         setType(Type.scrolled);
                         setScrollAmountY(amountY);
-                        setScrollAmountX(amountY);
+                        setScrollAmountX(amountX);
                         setBubbles(false);
                     }});
                 }
                 return true;
             }
         });
-    }
-
-    /**
-     * Must be called before any interaction with Box2D
-     *
-     * @param gravity                (x, y)
-     * @param ignoreInactiveBodies Determines whether bodies stay active when
-     *                               stationary
-     * @param skyLightDirection      Direction the sky light is from, 0 is up (0 ->
-     *                               360)
-     */
-    public static void setUpBox2D(Vector2 gravity, boolean ignoreInactiveBodies, float skyLightDirection) {
-        Box2D.init();
-
-        // World
-        mainWorld = new World(gravity, ignoreInactiveBodies);
-        ECL = new EntityContactListener();
-        mainWorld.setContactListener(ECL);
-
-        // Physics camera in METERS
-        physicsCamera = new OrthographicCamera();
-        physicsViewport = new FitViewport(convertToMeters(WIDTH), convertToMeters(HEIGHT), physicsCamera);
-        physicsViewport.apply();
-        physicsCamera.position.set(convertToMeters(WIDTH) / 2f, convertToMeters(HEIGHT) / 2f, 0f);
-        physicsCamera.update();
-
-        // RayHandler
-        rayHandler = new RayHandler(mainWorld);
-        rayHandler.setShadows(true);
-        rayHandler.setBlurNum(2);
-        rayHandler.setAmbientLight(0f);
-        rayHandler.setCulling(true);
-
-        // (Optional) one-time set; we’ll also set it each frame in render()
-        rayHandler.setCombinedMatrix(physicsCamera);
-
-        // ---- SKY LIGHT IN METERS ----
-        float offX = MathUtils.sinDeg(skyLightDirection - 180f) * convertToMeters(2000f);
-        float offY = -MathUtils.cosDeg(skyLightDirection - 180f) * convertToMeters(2000f);
-
-        skyLight = new PointLight(rayHandler, 8192);
-        skyLight.setColor(Color.WHITE);
-
-        // Distances are meters when using the meters camera
-        skyLight.setDistance(convertToMeters(800f));
-
-        // Center in meters + offset
-        skyLight.setPosition(convertToMeters(WIDTH) / 2f + offX, convertToMeters(HEIGHT) / 2f + offY);
-        skyLight.setSoftnessLength(0f);
-    }
-
-    /**
-     * Set settings for skylight
-     *
-     * @param direction    Direction the sky light will be from
-     * @param brightness
-     * @param ambientLight
-     * @param shadows
-     */
-    public static void setLightSettings(float direction, float brightness, float ambientLight, boolean shadows) {
-        /*float locationX = MathUtils.sinDeg(direction) * 1000;
-        float locationY = -MathUtils.cosDeg(direction) * 1000;
-        skyLight.setColor(new Color(1f, 1f, 1f, brightness));
-        skyLight.setPosition(WIDTH / 2 + locationX, HEIGHT / 2 + locationY);
-        rayHandler.setShadows(shadows);
-        rayHandler.setAmbientLight(ambientLight);*/
-
-        float offX = MathUtils.sinDeg(direction)  * convertToMeters(1000f);
-        float offY = -MathUtils.cosDeg(direction) * convertToMeters(1000f);
-
-        skyLight.setColor(new Color(1f, 1f, 1f, brightness));
-        skyLight.setPosition(convertToMeters(WIDTH) / 2f + offX, convertToMeters(HEIGHT) / 2f + offY);
-
-        rayHandler.setShadows(shadows);
-        rayHandler.setAmbientLight(ambientLight);
-    }
-
-    public static void disableSkyLight(){
-        skyLight.setActive(false);
-    }
-
-    public static void activateSkyLight(){
-        skyLight.setActive(true);
     }
 
     public abstract void setUp();
@@ -213,10 +123,10 @@ public abstract class Manager extends ApplicationAdapter {
 
         // Set the scissor box to match the viewport
         Gdx.gl.glScissor(
-            (int)viewport.getScreenX(),
-            (int)viewport.getScreenY(),
-            (int)viewport.getScreenWidth(),
-            (int)viewport.getScreenHeight()
+            viewport.getScreenX(),
+            viewport.getScreenY(),
+            viewport.getScreenWidth(),
+            viewport.getScreenHeight()
         );
 
         // Clear only inside the viewport bounds
@@ -225,33 +135,45 @@ public abstract class Manager extends ApplicationAdapter {
 
         Gdx.gl.glDisable(GL20.GL_SCISSOR_TEST);
 
+        if(!mouseDown && Gdx.input.isButtonPressed(Input.Buttons.LEFT)){
+            CLICK = false;
+            mouseDown = true;
+            clickDetect.restart();
+            add(clickDetect);
+        } else if(mouseDown && !Gdx.input.isButtonPressed(Input.Buttons.LEFT)){
+            CLICK = true;
+            mouseDown = false;
+        } else {
+            CLICK = false;
+        }
+
+        SCALE = Math.min(getScreenWidth() / ratioX, getScreenHeight() / ratioY);
+
         delta = Gdx.graphics.getDeltaTime();
+        nanoTime = System.nanoTime();
 
         camera.update();
         stage.act(delta);
-        nanoTime = System.nanoTime();
 
         //May want to change this later to not copy the list
         if(currentPage != null) {
-            List<Animation> animationRef = currentPage.animations;
-            for (int i = 0; i < animationRef.size(); i++) {
-                if (!animationRef.get(i).update(nanoTime, delta)) {
-                    animationRef.remove(i);
+            List<Animation> animationDef = currentPage.animations;
+            for(int i = 0; i < animationDef.size(); i++){
+                if(!animationDef.get(i).update(nanoTime, delta)){
+                    animationDef.remove(i);
                     i--;
                 }
             }
-            List<Timer> timerRef = currentPage.timers;
-            for (int i = 0; i < timerRef.size(); i++) {
-                if (!timerRef.get(i).update(delta)) {
-                    timerRef.remove(i);
+            List<Timer> timerDef = currentPage.timers;
+            for(int i = 0; i < timerDef.size(); i++){
+                if(!timerDef.get(i).update(delta)){
+                    timerDef.remove(i);
                     i--;
                 }
             }
         }
 
-        if(mainWorld != null){
-            mainWorld.step(delta, 6, 2);  // 6 velocity iterations, 2 position iterations
-        }
+        extensions.forEach(ManagerExtension::render);
 
         for(int i = 0; i < animationList.size(); i++){
             if(!animationList.get(i).update(nanoTime, delta)){
@@ -261,44 +183,13 @@ public abstract class Manager extends ApplicationAdapter {
         }
 
         for(int i = 0; i < timerList.size(); i++){
-            if (!timerList.get(i).update(delta)) {
+            if(!timerList.get(i).update(delta)){
                 timerList.remove(i);
                 i--;
             }
         }
 
-        for(int i = 0; i < resizeList.size(); i++){
-            if (!resizeList.get(i).run()) {
-                resizeList.remove(i);
-                i--;
-            }
-        }
-
         stage.draw();
-
-        // Render light
-        if(mainWorld != null && shading){
-            // Keep lights inside the same letterboxed area as your Scene2D viewport
-            rayHandler.useCustomViewport(
-                viewport.getScreenX(),
-                viewport.getScreenY(),
-                viewport.getScreenWidth(),
-                viewport.getScreenHeight()
-            );
-
-            // If you have a player/body, update physicsCamera.position from body.getPosition() here
-            physicsCamera.update();
-
-            // Give RayHandler the METERS camera
-            rayHandler.setCombinedMatrix(
-                physicsCamera.combined,
-                physicsCamera.position.x, physicsCamera.position.y,
-                physicsCamera.viewportWidth  * physicsCamera.zoom,
-                physicsCamera.viewportHeight * physicsCamera.zoom
-            );
-
-            rayHandler.updateAndRender();
-        }
 
         if (printFrameRate) {
             Gdx.app.log("Manager", "FPS: " + Gdx.graphics.getFramesPerSecond());
@@ -325,20 +216,22 @@ public abstract class Manager extends ApplicationAdapter {
         }
     }
 
-    public static void enableShading(){
-        shading = true;
+    public static void addExtension(ManagerExtension newExtension){
+        if(!extensions.contains(newExtension)){
+            extensions.add(newExtension);
+        }
     }
 
-    public static void disableShading(){
-        shading = false;
+    public static void removeExtension(ManagerExtension newExtension){
+        int index = extensions.indexOf(newExtension);
+
+        if(index != -1){
+            extensions.remove(index);
+        }
     }
 
     public static void addToStage(Agent a){
         stage.addActor(a);
-    }
-
-    public static void setAmbientLight(Color c){
-        rayHandler.setAmbientLight(c);
     }
     /**
      * Sets the new background color
@@ -381,10 +274,10 @@ public abstract class Manager extends ApplicationAdapter {
      * Adds the page to the queue and loads the new page
      */
     public static void loadNewPage(Page p) {
-        for (int i = 0; i < queue.length; i++) {
-            if (queue[i] == p) {
+        for (Page page : queue) {
+            if (page == p) {
                 return; // Skips the queueing process below if the page being added is already existing
-                        // in the queue
+                // in the queue
             }
         }
         // If a page is already is added it is removed before the next page is added
@@ -394,15 +287,17 @@ public abstract class Manager extends ApplicationAdapter {
             removeRenderer(currentPage.renderer);
             currentPage.removeAgentsFromStage();
         }
-        if (queue[2] != null) {
-            queue[2].delete();
+        if (queue[cachePages - 1] != null) {
+            queue[cachePages - 1].delete();
         }
-        queue[2] = queue[1];
-        queue[1] = queue[0];
+        for(int i = cachePages - 1; i > 0; i--){
+            queue[i] = queue[i - 1];
+        }
         queue[0] = currentPage;
 
         currentPage = p;
 
+        currentPage.frame();
         addRenderer(currentPage.renderer);
     }
 
@@ -417,25 +312,30 @@ public abstract class Manager extends ApplicationAdapter {
             throw new IllegalStateException("No previous page to return to!");
         Page current = currentPage;
         removeRenderer(currentPage.renderer);
+        currentPage.removeAgentsFromStage();
         currentPage = queue[0];
         queue[0] = current;
         currentPage.restart();
+        currentPage.frame();
         addRenderer(currentPage.renderer);
         return currentPage;
     }
 
     /**
-     * Resizes the viewport every frame to make sure display is consistent with
+     * Resizes the viewport to make sure display is consistent with
      * window dimensions
      */
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height, true);
-        if (physicsViewport != null) physicsViewport.update(width, height, true); // meters
+        for(ManagerExtension me : extensions){
+            me.resize(width, height);
+        }
+        resizeList.removeIf(r -> !r.resize());
         if(currentPage == null) return;
-        List<Process> processRef = currentPage.resizes;
+        List<Resize> processRef = currentPage.resizes;
         for(int i = 0; i < processRef.size(); i++) {
-            if (!processRef.get(i).run()) {
+            if (!processRef.get(i).resize()) {
                 processRef.remove(i);
                 i--;
             }
@@ -462,11 +362,8 @@ public abstract class Manager extends ApplicationAdapter {
                 nextPage.delete();
             }
         }
-        if(rayHandler != null){
-            rayHandler.dispose();
-        }
-        if(mainWorld != null){
-            mainWorld.dispose();
+        for(ManagerExtension me : extensions){
+            me.dispose();
         }
         MusicHandler.dispose();
     }
@@ -480,46 +377,35 @@ public abstract class Manager extends ApplicationAdapter {
         return isVSync;
     }
 
-    public static EntityContactListener getEntityContactListener(){
-        if(ECL == null){
-            throw new IllegalStateException("Box 2D has not been set up!");
-        }
-        return ECL;
-    }
-
-    public static RayHandler getRayHandler(){
-        return rayHandler;
-    }
-
-    public static float convertToMeters(float f){
-        return f / PPM;
-    }
-
-    public static float convertToPixels(float f){
-        return f * PPM;
-    }
-
-    public static void addTimer(Timer t){
+    public static void add(Timer t){
+        if(t.isActive) return;
+        t.isActive = true;
+        t.setUp();
         timerList.add(t);
     }
 
-    public static void removeTimer(Timer t){
+    public static void remove(Timer t){
+        t.isActive = false;
         timerList.remove(t);
     }
 
-    public static void addAnimation(Animation a){
+    public static void add(Animation a){
+        if(a.isActive) return;
+        a.isActive = true;
+        a.setUp();
         animationList.add(a);
     }
 
-    public static void removeAnimation(Animation a){
+    public static void remove(Animation a){
+        a.isActive = false;
         animationList.remove(a);
     }
 
-    public static void addResize(Process p){
+    public static void add(Resize p){
         resizeList.add(p);
     }
 
-    public static void removeResize(java.lang.Process p){
+    public static void remove(Resize p){
         resizeList.remove(p);
     }
 
@@ -536,52 +422,13 @@ public abstract class Manager extends ApplicationAdapter {
         onClose = r;
     }
 
-    public static void setMasterVolume(float f){
-        masterVolume = MathUtils.clamp(f, 0, 1);
-        MusicHandler.updateVolume();
-    }
-
-    public static float getMasterVolume(){
-        return masterVolume;
-    }
-
-    public static void setMusicVolume(float f){
-        musicVolume = MathUtils.clamp(f, 0, 1);
-        MusicHandler.updateVolume();
-    }
-
-    public static float getMusicVolume(){
-        return musicVolume;
-    }
-
-    public static void setSFXVolume(float f){
-        SFXVolume = MathUtils.clamp(f, 0, 1);
-    }
-
-    public static float getSFXVolume(){
-        return SFXVolume;
-    }
-
     public static FileHandle getAsset(String path){
         return Gdx.files.internal(path);
-    }
-
-    public static FileHandle getFileFromAssets(String path){
-        FileHandle file = Gdx.files.internal(path);
-        return file;
     }
 
     public static FileHandle getLocalFile(String path){
         FileHandle file = Gdx.files.local(path);
         return file;
-    }
-
-    public static float getViewportWidth(){
-        return viewport.getScreenWidth();
-    }
-
-    public static float getViewportHeight(){
-        return viewport.getScreenHeight();
     }
 
     public static int getScreenWidth(){
@@ -592,19 +439,11 @@ public abstract class Manager extends ApplicationAdapter {
         return Gdx.graphics.getHeight();
     }
 
-    public static float getFitMouseX(){
-        return (Gdx.input.getX() - (getScreenWidth() - getViewportWidth()) / 2) * (WIDTH / getViewportWidth());
-    }
-
-    public static float getFitMouseY(){
-        return HEIGHT - (Gdx.input.getY() - (getScreenHeight() - getViewportHeight()) / 2) * (HEIGHT / getViewportHeight());
-    }
-
-    public static int getScreenMouseX(){
+    public static int getMouseX(){
         return Gdx.input.getX();
     }
 
-    public static int getScreenMouseY(){
+    public static int getMouseY(){
         return getScreenHeight() - Gdx.input.getY();
     }
 
@@ -615,4 +454,29 @@ public abstract class Manager extends ApplicationAdapter {
     public static boolean isOnDesktop(){
         return onDesktop;
     }
+
+    public static void setRatioX(float x){
+        ratioX = x;
+    }
+
+    public static void setRatioY(float y){
+        ratioY = y;
+    }
+
+    public static void setRatio(float x, float y){
+        ratioX = x;
+        ratioY = y;
+    }
+
+    public static float getRatioX(){
+        return ratioX;
+    }
+
+    public static float getRatioY(){
+        return ratioY;
+    }
+
+    public static float getScale(){return SCALE;}
+
+    public static boolean isClick(){return CLICK;}
 }

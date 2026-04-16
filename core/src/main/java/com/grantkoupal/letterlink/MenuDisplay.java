@@ -66,7 +66,7 @@ public class MenuDisplay extends Agent {
         startTime = System.currentTimeMillis();
 
         // Hint pulse animation
-        animateHint = new Animation(System.nanoTime(), Animation.INDEFINITE, new Action() {
+        animateHint = new Animation(Animation.INDEFINITE, new Action() {
             @Override
             public void run(float delta) {
                 if (Board.getHintScore() < 10) {
@@ -82,7 +82,7 @@ public class MenuDisplay extends Agent {
 
     @Override
     public void frame() {
-        getPage().addAnimation(animateHint);
+        getPage().add(animateHint);
     }
 
     @Override
@@ -126,8 +126,8 @@ public class MenuDisplay extends Agent {
         sb.begin();
 
         if (activateClick) {
-            float mouseX = Source.getScreenMouseX();
-            float mouseY = Source.getScreenMouseY();
+            float mouseX = Source.getMouseX();
+            float mouseY = Source.getMouseY();
 
             if (distance(mouseX, mouseY, hintX, hintY) < 90f * scale) {
                 if (!Board.menuOpen) {

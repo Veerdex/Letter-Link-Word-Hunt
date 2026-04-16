@@ -122,6 +122,11 @@ public class FinishPage extends Page {
     }
 
     @Override
+    public void frame(){
+
+    }
+
+    @Override
     public void restart() {
         add(dd);
     }
@@ -266,7 +271,7 @@ public class FinishPage extends Page {
         private boolean mouseDown = false;
 
         public DataDisplay(){
-            addAnimation(new Animation(System.nanoTime(), Animation.INDEFINITE, new Action(){
+            add(new Animation(Animation.INDEFINITE, new Action(){
                 @Override
                 public void run(float delta) {
                     boolean click = false;
@@ -279,7 +284,7 @@ public class FinishPage extends Page {
                         mouseDown = false;
                     }
                     float yPos = centerY * 2 - 300 * scale;
-                    if(Math.abs(Source.getScreenMouseX() - centerX) < 400 * scale && Math.abs(Source.getScreenMouseY() - yPos) < 150 * scale){
+                    if(Math.abs(Source.getMouseX() - centerX) < 400 * scale && Math.abs(Source.getMouseY() - yPos) < 150 * scale){
                         if(click){
                             moreButtonScale = 1;
                             WordOverview wo = new WordOverview();
@@ -299,7 +304,7 @@ public class FinishPage extends Page {
                         }
                     }
                     yPos = 300 * scale;
-                    if(Math.abs(Source.getScreenMouseX() - centerX) < 400 * scale && Math.abs(Source.getScreenMouseY() - yPos) < 150 * scale){
+                    if(Math.abs(Source.getMouseX() - centerX) < 400 * scale && Math.abs(Source.getMouseY() - yPos) < 150 * scale){
                         if(click){
                             finishButtonScale = 1;
                             MainMenu mm = new MainMenu();

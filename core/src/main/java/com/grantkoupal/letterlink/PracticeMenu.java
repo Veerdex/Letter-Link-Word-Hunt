@@ -49,7 +49,7 @@ public class PracticeMenu extends Agent {
 
     @Override
     public void frame() {
-        getPage().addAnimation(new Animation(System.nanoTime(), Animation.INDEFINITE, new Action() {
+        getPage().add(new Animation(Animation.INDEFINITE, new Action() {
             @Override
             public void run(float delta) {
                 if (!Board.menuOpen || Board.settingsOpen) return;
@@ -57,8 +57,8 @@ public class PracticeMenu extends Agent {
                 float centerX = Source.getScreenWidth() / 2f;
                 float centerY = Source.getScreenHeight() / 2f;
 
-                float mouseX = Source.getScreenMouseX();
-                float mouseY = Source.getScreenMouseY();
+                float mouseX = Source.getMouseX();
+                float mouseY = Source.getMouseY();
 
                 boolean click = detectClick();
 

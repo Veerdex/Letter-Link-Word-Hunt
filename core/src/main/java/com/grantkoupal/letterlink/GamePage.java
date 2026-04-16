@@ -12,13 +12,11 @@ import java.util.List;
  * The main practice game page where players find words on a letter grid.
  * Manages the game board, hint table, guess display, and scoring.
  */
-public class PracticePage extends Page {
+public class GamePage extends Page {
 
     // ===== Game Components =====
     private Board board;
 
-    private HintTable hintTable;
-    private GuessTable guessTable;
     private ChainDisplay chainDisplay;
     private PointsDisplay pointsDisplay;
     private MenuDisplay menuDisplay;
@@ -102,13 +100,6 @@ public class PracticePage extends Page {
     }
 
     private void createUIComponents() {
-        // Left side: all possible words (hidden until found)
-        hintTable = new HintTable(Board.getWordsInBoard(), Board.getWordsFound());
-        add(hintTable);
-
-        // Right side: words the player has found
-        guessTable = new GuessTable(Board.getListOfWordsFound());
-        add(guessTable);
 
         // Current letter chain being traced
         chainDisplay = new ChainDisplay();
@@ -132,7 +123,7 @@ public class PracticePage extends Page {
     }
 
     private void setupResizeHandler() {
-        add(new Resize(new Resizable() {
+        add(new Resize(new Resizable(){
             @Override
             public void run() {
                 FrameBuffer newFb = new FrameBuffer(
@@ -161,8 +152,6 @@ public class PracticePage extends Page {
     @Override
     public void dispose() {
         board.dispose();
-        guessTable.dispose();
-        hintTable.dispose();
         chainDisplay.dispose();
         pointsDisplay.dispose();
         menuDisplay.dispose();

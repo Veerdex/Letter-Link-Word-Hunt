@@ -208,7 +208,7 @@ public class GamemodeSelection extends Agent {
     public void popUp() {
         x = 0;
 
-        Animation animation = new Animation(System.nanoTime(), Animation.INDEFINITE, new Action() {
+        Animation animation = new Animation(Animation.INDEFINITE, new Action() {
             @Override
             public void run(float delta) {
                 x += delta * 2;
@@ -225,14 +225,14 @@ public class GamemodeSelection extends Agent {
             }
         });
 
-        parent.addAnimation(animation);
+        parent.add(animation);
     }
 
     public void dropDown() {
         x = MathUtils.PI / 2;
         buttonsEnabled = false;
 
-        Animation animation = new Animation(System.nanoTime(), Animation.INDEFINITE, new Action() {
+        Animation animation = new Animation(Animation.INDEFINITE, new Action() {
             @Override
             public void run(float delta) {
                 x += delta * 2;
@@ -249,7 +249,7 @@ public class GamemodeSelection extends Agent {
             }
         });
 
-        parent.addAnimation(animation);
+        parent.add(animation);
     }
 
     private Texture getTexture(String name) {
@@ -275,7 +275,7 @@ public class GamemodeSelection extends Agent {
         float dropDownScale = .4f * scale;
         sb.draw(dropDown, width / 2 - dropDown.getWidth() / 2f * dropDownScale, (yPos + (yPos / (960 / scale) * 164) - 98) * scale, dropDown.getWidth() * dropDownScale, dropDown.getHeight() * dropDownScale);
 
-        if(Gdx.input.isButtonJustPressed(Input.Buttons.LEFT) && buttonsEnabled && Math.sqrt(Math.pow(Source.getScreenMouseX() - width / 2, 2) + Math.pow(Source.getScreenMouseY() - ((yPos + 98 / 2f) * scale), 2)) < 200 * scale){
+        if(Gdx.input.isButtonJustPressed(Input.Buttons.LEFT) && buttonsEnabled && Math.sqrt(Math.pow(Source.getMouseX() - width / 2, 2) + Math.pow(Source.getMouseY() - ((yPos + 98 / 2f) * scale), 2)) < 200 * scale){
             dropDown();
         }
 
@@ -493,7 +493,7 @@ public class GamemodeSelection extends Agent {
         }
 
         private void addAnimation() {
-            Animation animation = new Animation(System.nanoTime(), Animation.INDEFINITE, new Action() {
+            Animation animation = new Animation(Animation.INDEFINITE, new Action() {
                 @Override
                 public void run(float delta) {
                     if (!buttonsEnabled) {
@@ -502,8 +502,8 @@ public class GamemodeSelection extends Agent {
                     }
 
                     float tempYPos = yPos * scale;
-                    float mouseX = Source.getScreenMouseX();
-                    float mouseY = Source.getScreenMouseY();
+                    float mouseX = Source.getMouseX();
+                    float mouseY = Source.getMouseY();
 
                     boolean hovering =
                         Math.abs(mouseX - (width / 2f)) < OPTION_HOVER_HALF_WIDTH * scale &&
@@ -544,7 +544,7 @@ public class GamemodeSelection extends Agent {
                 }
             });
 
-            parent.addAnimation(animation);
+            parent.add(animation);
         }
 
         public void draw(SpriteBatch sb) {

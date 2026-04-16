@@ -4,7 +4,10 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.*;import com.grantkoupal.letterlink.quantum.core.Agent;import com.grantkoupal.letterlink.quantum.core.Manager;
+import com.badlogic.gdx.physics.box2d.*;
+import com.grantkoupal.letterlink.quantum.core.Agent;
+
+import static com.grantkoupal.letterlink.quantum.physics.Box2DManager.*;
 
 public class Entity extends Agent {
 
@@ -25,13 +28,13 @@ public class Entity extends Agent {
 
         isEntity = true;
         bodyDef.type = bodyType;
-        bodyDef.position.set(spawnX / Manager.PPM, spawnY / Manager.PPM);
+        bodyDef.position.set(spawnX / PPM, spawnY / PPM);
 
-        physicalObject.filter.categoryBits = Manager.CONTACT_CHANNEL;
+        physicalObject.filter.categoryBits = CONTACT_CHANNEL;
 
         color = c;
 
-        body = Manager.mainWorld.createBody(bodyDef);
+        body = mainWorld.createBody(bodyDef);
         body.createFixture(physicalObject);
         body.setUserData(this);
 
@@ -107,7 +110,7 @@ public class Entity extends Agent {
                     for (int i = 0; i < vertices.length; i++) {
                         Vector2 v1 = vertices[i];
                         Vector2 v2 = vertices[(i + 1) % vertices.length];
-                        sr.triangle(center.x * Manager.PPM, center.y * Manager.PPM, v1.x * Manager.PPM, v1.y * Manager.PPM, v2.x * Manager.PPM, v2.y * Manager.PPM);
+                        sr.triangle(center.x * PPM, center.y * PPM, v1.x * PPM, v1.y * PPM, v2.x * PPM, v2.y * PPM);
                     }
                     break;
 
@@ -117,7 +120,7 @@ public class Entity extends Agent {
                     transform.mul(centerCircle);
                     float radius = circle.getRadius();
 
-                    sr.circle(centerCircle.x * Manager.PPM, centerCircle.y * Manager.PPM, radius * Manager.PPM, 30); // 30 segments
+                    sr.circle(centerCircle.x * PPM, centerCircle.y * PPM, radius * PPM, 30); // 30 segments
                     break;
 
                 case Edge:
@@ -129,7 +132,7 @@ public class Entity extends Agent {
                     transform.mul(v0);
                     transform.mul(v1);
 
-                    sr.line(v0.scl(Manager.PPM), v1.scl(Manager.PPM));
+                    sr.line(v0.scl(PPM), v1.scl(PPM));
                     break;
 
                 case Chain:
@@ -143,7 +146,7 @@ public class Entity extends Agent {
                         chain.getVertex(i + 1, b);
                         transform.mul(a);
                         transform.mul(b);
-                        sr.line(a.scl(Manager.PPM), b.scl(Manager.PPM));
+                        sr.line(a.scl(PPM), b.scl(PPM));
                     }
                     break;
             }

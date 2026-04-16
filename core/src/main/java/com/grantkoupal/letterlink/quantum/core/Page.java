@@ -20,7 +20,7 @@ public abstract class Page implements Disposable{
 
     public List<Timer> timers = new ArrayList<Timer>();
     public List<Animation> animations = new ArrayList<Animation>();
-    public List<Process> resizes = new ArrayList<Process>();
+    public List<Resize> resizes = new ArrayList<Resize>();
     public LinkedList<Agent> onStage = new LinkedList<Agent>();
 
     public Page(){
@@ -34,9 +34,18 @@ public abstract class Page implements Disposable{
 
     public abstract void restart();
 
-    public void addTimer(Timer t){
+    public abstract void frame();
+
+    public void add(Timer t){
+        if(t.isActive) return;
+        t.isActive = true;
+        t.setUp();
         timers.add(t);
-        t.enabled = true;
+    }
+
+    public void remove(Timer t){
+        t.isActive = false;
+        timers.remove(t);
     }
 
     public void addToStage(Agent a){
@@ -98,8 +107,16 @@ public abstract class Page implements Disposable{
         }
     }
 
-    public void addAnimation(Animation a){
+    public void add(Animation a){
+        if(a.isActive) return;
+        a.isActive = true;
+        a.setUp();
         animations.add(a);
+    }
+
+    public void remove(Animation a){
+        a.isActive = false;
+        animations.remove(a);
     }
 
     protected void finish(){
@@ -111,11 +128,11 @@ public abstract class Page implements Disposable{
         }
     }
 
-    public void addResize(Process p){
+    public void add(Resize p){
         resizes.add(p);
     }
 
-    public void removeResize(Process p){
+    public void remove(Resize p){
         resizes.remove(p);
     }
 

@@ -8,9 +8,9 @@ public class Timer{
     private final float step;
     private float timePassed = 0;
     private boolean isFinished = false;
-    public boolean enabled = false;
     private TimeFrame timeFrame;
     private int passes;
+    public boolean isActive = false;
     private Runnable onEnd;
 
     public Timer(float step, int iterations, TimeFrame timeFrame){
@@ -23,10 +23,18 @@ public class Timer{
         this.timeFrame.parentTimer = this;
     }
 
+    protected void setUp(){
+        isFinished = false;
+        iterations = 0;
+    }
+
+    public void restart(){
+        setUp();
+    }
+
     public void stop(){
-        if(enabled && onEnd != null){
+        if(onEnd != null){
             onEnd.run();
-            enabled = false;
         }
         isFinished = true;
     }

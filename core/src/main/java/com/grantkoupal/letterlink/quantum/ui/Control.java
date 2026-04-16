@@ -11,7 +11,10 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Touchable;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.DragListener;
-import com.grantkoupal.letterlink.Source;import com.grantkoupal.letterlink.quantum.core.Agent;import com.grantkoupal.letterlink.quantum.core.Manager;
+import com.grantkoupal.letterlink.Source;
+import com.grantkoupal.letterlink.quantum.core.Agent;
+import com.grantkoupal.letterlink.quantum.core.Manager;
+import static com.grantkoupal.letterlink.quantum.physics.Box2DManager.*;
 
 public class Control extends Agent {
 
@@ -58,12 +61,12 @@ public class Control extends Agent {
 
 
         this.label = Source.generateFont("Fonts/Orbitron-VariableFont_wght.ttf", 200);
-        label.getData().setScale(Manager.convertToMeters(100 / label.getCapHeight()), Manager.convertToMeters(100 / label.getCapHeight()));
+        label.getData().setScale(convertToMeters(100 / label.getCapHeight()), convertToMeters(100 / label.getCapHeight()));
         label.setUseIntegerPositions(false);
         labelGL.setText(label, text);
 
         valueDisplay = Source.generateFont("Fonts/Orbitron-VariableFont_wght.ttf", 200);
-        valueDisplay.getData().setScale(Manager.convertToMeters(100 / valueDisplay.getCapHeight()), Manager.convertToMeters(100 / valueDisplay.getCapHeight()));
+        valueDisplay.getData().setScale(convertToMeters(100 / valueDisplay.getCapHeight()), convertToMeters(100 / valueDisplay.getCapHeight()));
         valueDisplay.setUseIntegerPositions(false);
         valueDisplayGL.setText(valueDisplay, Float.toString(value));
 
