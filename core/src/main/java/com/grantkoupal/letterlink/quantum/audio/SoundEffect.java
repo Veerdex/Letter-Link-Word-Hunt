@@ -1,20 +1,20 @@
 package com.grantkoupal.letterlink.quantum.audio;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Sound;
 
 public class SoundEffect {
-    private Sound s;
+    private final Sound s;
     private long density = 0;
     private long previousTime = 0;
 
-    public SoundEffect(String path){
-        s = Gdx.audio.newSound(Gdx.files.internal(path));
+    public SoundEffect(Sound s){
+        this.s = s;
     }
 
     public void render(float volume, float pitch, float pan){
-        if(System.currentTimeMillis() > previousTime + density){
-            previousTime = System.currentTimeMillis();
+        long currentTime = System.currentTimeMillis();
+        if(currentTime > previousTime + density){
+            previousTime = currentTime;
             long id = s.play(volume, pitch, pan);
             s.setVolume(id, volume);
         }

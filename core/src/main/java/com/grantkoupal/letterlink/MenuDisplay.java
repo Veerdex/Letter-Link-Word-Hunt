@@ -16,6 +16,8 @@ import java.util.List;
 
 public class MenuDisplay extends Agent {
 
+    public enum MODE {CASUAL, COMPETITIVE, PRACTICE};
+
     // ===== Constants =====
     private static final int FONT_SIZE = 64;
     private static final int MENU_HEIGHT = 325;
@@ -43,8 +45,11 @@ public class MenuDisplay extends Agent {
     private final Animation animateHint;
     private float hintTimer = 0f;
     private float hintScale = 1f;
+    private final MODE mode;
 
-    public MenuDisplay() {
+    public MenuDisplay(MODE mode) {
+        this.mode = mode;
+
         // Textures
         hintTexture = new Texture(Source.getAsset("Misc/Light Bulb.png"));
         hintTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
@@ -129,10 +134,9 @@ public class MenuDisplay extends Agent {
             float mouseX = Source.getMouseX();
             float mouseY = Source.getMouseY();
 
-            if (distance(mouseX, mouseY, hintX, hintY) < 90f * scale) {
+            if ((mode == MODE.PRACTICE || Board.getHintScore() > 9) && distance(mouseX, mouseY, hintX, hintY) < 90f * scale) {
                 if (!Board.menuOpen) {
                     String word = getRandomWordFromBoard(1);
-                    System.out.println(word);
                     Board.activateHint(word);
                 }
             }
@@ -142,8 +146,17 @@ public class MenuDisplay extends Agent {
                 mouseDown = false;
             }
         }
-
-        hint.draw(sb);
+        if(mode == MODE.CASUAL){
+            if(Board.getHintScore() < 10) {
+                sb.setShader(Shader.blackWhiteShader);
+                hint.draw(sb);
+                sb.setShader(null);
+            } else {
+                hint.draw(sb);
+            }
+        } else if (mode == MODE.PRACTICE){
+            hint.draw(sb);
+        }
         icon.draw(sb);
         menu.draw(sb);
 

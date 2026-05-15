@@ -1,9 +1,11 @@
 package com.grantkoupal.letterlink;
 
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.grantkoupal.letterlink.backend.BackendHandler;
+import com.grantkoupal.letterlink.backend.MatchStatusResponse;
 import com.grantkoupal.letterlink.backend.data.SessionData;
+import com.grantkoupal.letterlink.quantum.audio.SoundEffectManager;
 import com.grantkoupal.letterlink.quantum.core.Manager;
+import com.grantkoupal.letterlink.quantum.core.TextureSet;
 import com.grantkoupal.letterlink.quantum.core.TimeFrame;
 import com.grantkoupal.letterlink.quantum.core.Timer;
 import com.grantkoupal.letterlink.quantum.font.FontProvider;
@@ -11,6 +13,9 @@ import com.grantkoupal.letterlink.quantum.font.FontProvider;
 public class Source extends Manager {
 
     protected static FontProvider fontProvider;
+
+    public static TextureSet textureSet = new TextureSet();
+    public static SoundEffectManager soundEffectManager = new SoundEffectManager();
 
     public Source(FontProvider fontProvider){
         Source.fontProvider = fontProvider;
@@ -20,16 +25,19 @@ public class Source extends Manager {
     public void setUp() {
 
         saveDataEvery10Seconds();
+        setRatio(1500, 3000);
 
-        BackendHandler.startUp(new BackendHandler.StartupCallback() {
+        /*BackendHandler.startUp(new BackendHandler.StartupCallback() {
             @Override
             public void onSuccess() {
                 loadAssets();
 
                 RankHandler.loadTextures();
 
-                MainMenu mm = new MainMenu();
-                loadNewPage(mm);
+                MatchFound mf = new MatchFound(new MatchStatusResponse());
+                loadNewPage(mf);
+                //MainMenu mm = new MainMenu();
+                //loadNewPage(mm);
                 //LoadingBoardPage lbp = new LoadingBoardPage();
                 //loadNewPage(lbp);
             }
@@ -38,7 +46,10 @@ public class Source extends Manager {
             public void onFailure(Throwable t) {
                 t.printStackTrace();
             }
-        });
+        });*/
+
+        MatchFound mf = new MatchFound(new MatchStatusResponse());
+        loadNewPage(mf);
 
         //LoadingBoardPage loadingPage = new LoadingBoardPage();
         //loadNewPage(loadingPage);

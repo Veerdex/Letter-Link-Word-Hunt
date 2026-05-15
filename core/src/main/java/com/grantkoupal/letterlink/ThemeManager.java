@@ -5,15 +5,19 @@ public class ThemeManager {
         "Cabin",
         "Volcano"
     };
-    protected static String currentTheme = "Cabin";
+    protected static String currentTheme = "";
 
     public static void setCurrentTheme(String newTheme){
-        if(isValidTheme(newTheme)){
-            currentTheme = newTheme;
-            DataManager.update();
+        if(isValidTheme(newTheme)) {
+            if (!newTheme.equals(currentTheme)){
+                currentTheme = newTheme;
+                DataManager.update();
+                SoundManager.update();
+            }
         } else {
             currentTheme = "Cabin";
             DataManager.update();
+            SoundManager.update();
         }
     }
 

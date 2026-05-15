@@ -228,7 +228,7 @@ public class MainMenu extends Page {
 
                 } else if(playHover){
                     if(SessionData.mode.equals("practice")){
-                        LoadingBoardPage lbp = new LoadingBoardPage();
+                        LoadPracticeBoard lbp = new LoadPracticeBoard();
                         Source.loadNewPage(lbp);
                     } else {
                         FindMatch fm = new FindMatch();

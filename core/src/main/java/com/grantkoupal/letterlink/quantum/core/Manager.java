@@ -12,8 +12,10 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.grantkoupal.letterlink.Source;
 import com.grantkoupal.letterlink.quantum.audio.MusicHandler;
 import com.grantkoupal.letterlink.quantum.paint.Textures;
+import com.grantkoupal.letterlink.quantum.particle.Particle;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -27,8 +29,9 @@ public abstract class Manager extends ApplicationAdapter {
 
     // ----- Scaling -----
     private static float SCALE = 1;
-    private static float ratioX = 1000;
-    private static float ratioY = 1000;
+    private static float ratioX = 1280;
+    private static float ratioY = 720;
+    private static float DELTA_STEP = 1;
 
     // ----- Additions -----
     private static final LinkedList<ManagerExtension> extensions = new LinkedList<>();
@@ -149,7 +152,7 @@ public abstract class Manager extends ApplicationAdapter {
 
         SCALE = Math.min(getScreenWidth() / ratioX, getScreenHeight() / ratioY);
 
-        delta = Gdx.graphics.getDeltaTime();
+        delta = Gdx.graphics.getDeltaTime() * DELTA_STEP;
         nanoTime = System.nanoTime();
 
         camera.update();
@@ -405,6 +408,11 @@ public abstract class Manager extends ApplicationAdapter {
         resizeList.add(p);
     }
 
+    public void add(Particle p){
+        addToStage(p);
+        add(p.getAnimation());
+    }
+
     public static void remove(Resize p){
         resizeList.remove(p);
     }
@@ -479,4 +487,20 @@ public abstract class Manager extends ApplicationAdapter {
     public static float getScale(){return SCALE;}
 
     public static boolean isClick(){return CLICK;}
+
+    public static float getWorldWidth(){return getWidthProportion() * WIDTH;}
+
+    public static float getWorldHeight(){return getHeightProportion() * HEIGHT;}
+
+    public static float getWidthProportion(){
+        return Math.max(((float)Source.getScreenWidth() / Source.getScreenHeight()) / ((float)WIDTH / HEIGHT), 1);
+    }
+
+    public static float getHeightProportion(){
+        return Math.max(((float)Source.getScreenHeight() / Source.getScreenWidth()) / ((float)HEIGHT / WIDTH), 1);
+    }
+
+    public static void setDeltaStep(float deltaStep){DELTA_STEP = deltaStep;}
+
+    public static float getDeltaStep(){return DELTA_STEP;}
 }

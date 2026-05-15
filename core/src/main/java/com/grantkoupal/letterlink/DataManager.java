@@ -3,6 +3,7 @@ package com.grantkoupal.letterlink;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.grantkoupal.letterlink.backend.BackendHandler;
+import com.grantkoupal.letterlink.backend.data.SessionData;
 
 import java.util.Scanner;
 
@@ -64,7 +65,7 @@ public class DataManager {
     }
 
     private static void readValues(){
-        Scanner scan = new Scanner(Source.getAsset(THEME_PATH + ThemeManager.currentTheme + DATA_PATH).readString());
+        Scanner scan = new Scanner(Source.getAsset(THEME_PATH + SessionData.theme + DATA_PATH).readString());
         updateFontName(scan.nextLine());
         updateScalers(scan.nextLine());
         updateTraceColor(scan.nextLine());

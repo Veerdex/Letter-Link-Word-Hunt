@@ -110,7 +110,7 @@ public class GamePage extends Page {
         add(pointsDisplay);
 
         // Top menu / HUD
-        menuDisplay = new MenuDisplay();
+        menuDisplay = new MenuDisplay(MenuDisplay.MODE.PRACTICE);
         add(menuDisplay);
 
         // Pause/menu overlay

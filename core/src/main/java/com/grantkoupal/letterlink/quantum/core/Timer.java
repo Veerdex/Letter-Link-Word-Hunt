@@ -25,7 +25,7 @@ public class Timer{
 
     protected void setUp(){
         isFinished = false;
-        iterations = 0;
+        passes = 0;
     }
 
     public void restart(){

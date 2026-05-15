@@ -34,6 +34,14 @@ public class Renderer extends Actor implements Disposable{
         SB = sb;
     }
 
+    public SpriteBatch getSpriteBatch(){
+        return SB;
+    }
+
+    public ShapeRenderer getShapeRenderer(){
+        return SR;
+    }
+
     public void addObject(Agent a){
         a.parentRenderer = this;
         int i;

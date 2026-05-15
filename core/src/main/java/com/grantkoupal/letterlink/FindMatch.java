@@ -22,6 +22,7 @@ public class FindMatch extends Page {
     // ===== Loading state =====
     private volatile boolean searchingComplete = false;
     private volatile boolean matchFound = false;
+    private volatile MatchStatusResponse response;
     private Thread loadingThread;
 
     @Override
@@ -83,6 +84,7 @@ public class FindMatch extends Page {
                     Solver.setBoardValue(Solver.calculatePoints());
                     Solver.organize();
 
+                    me().response = response;
                     matchFound = true;
                     searchingComplete = true;
                 }
@@ -101,6 +103,10 @@ public class FindMatch extends Page {
         );
     }
 
+    private FindMatch me(){
+        return this;
+    }
+
     private void startCompletionPollTimer() {
         add(new Timer(POLL_INTERVAL_SECONDS, Timer.INDEFINITE, new TimeFrame() {
             @Override
@@ -108,7 +114,7 @@ public class FindMatch extends Page {
                 if (!searchingComplete) return;
 
                 stop();
-                Source.loadNewPage(new GamePage());
+                Source.loadNewPage(new MatchFound(me().response));
             }
         }));
     }

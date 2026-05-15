@@ -1,10 +1,10 @@
 package com.grantkoupal.letterlink;
 
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;import com.badlogic.gdx.graphics.glutils.ShaderProgram;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 
 public class Shader {
 
-    // Vertex shader (usually just passes through)
     private static final String vertexShader =
         "attribute vec4 a_position;\n" +
             "attribute vec2 a_texCoord0;\n" +
@@ -15,7 +15,6 @@ public class Shader {
             "    gl_Position = u_projTrans * a_position;\n" +
             "}";
 
-    // Fragment shader (does the blur)
     private static final String fragmentShader =
         "#ifdef GL_ES\n" +
             "precision mediump float;\n" +
@@ -34,7 +33,7 @@ public class Shader {
             "    gl_FragColor = (sum / 25.0) * u_tint;\n" +
             "}";
 
-    private static String fragment =
+    private static final String fragment =
         "#ifdef GL_ES\n" +
             "precision mediump float;\n" +
             "#endif\n" +
@@ -43,12 +42,44 @@ public class Shader {
             "uniform sampler2D u_texture;\n" +
             "uniform float u_brightness;\n" +
             "void main() {\n" +
-            "  vec4 color = texture2D(u_texture, v_texCoords) * v_color;\n" +
-            "  color.rgb *= u_brightness;\n" +
-            "  gl_FragColor = color;\n" +
+            "    vec4 color = texture2D(u_texture, v_texCoords) * v_color;\n" +
+            "    color.rgb *= u_brightness;\n" +
+            "    gl_FragColor = color;\n" +
             "}";
 
-    public static ShaderProgram blurShader = new ShaderProgram(vertexShader, fragmentShader);
+    private static final String blackWhiteFragment =
+        "#ifdef GL_ES\n" +
+            "precision mediump float;\n" +
+            "#endif\n" +
+            "varying vec4 v_color;\n" +
+            "varying vec2 v_texCoords;\n" +
+            "uniform sampler2D u_texture;\n" +
+            "void main() {\n" +
+            "    vec4 color = texture2D(u_texture, v_texCoords) * v_color;\n" +
+            "    float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));\n" +
+            "    gl_FragColor = vec4(gray, gray, gray, color.a);\n" +
+            "}";
 
-    public static ShaderProgram glowShader = new ShaderProgram(SpriteBatch.createDefaultShader().getVertexShaderSource(), fragment);
+    public static final ShaderProgram blurShader =
+        new ShaderProgram(vertexShader, fragmentShader);
+
+    public static final ShaderProgram glowShader =
+        new ShaderProgram(SpriteBatch.createDefaultShader().getVertexShaderSource(), fragment);
+
+    public static final ShaderProgram blackWhiteShader =
+        new ShaderProgram(SpriteBatch.createDefaultShader().getVertexShaderSource(), blackWhiteFragment);
+
+    static {
+        if (!blurShader.isCompiled()) {
+            System.out.println("Blur Shader Error: " + blurShader.getLog());
+        }
+
+        if (!glowShader.isCompiled()) {
+            System.out.println("Glow Shader Error: " + glowShader.getLog());
+        }
+
+        if (!blackWhiteShader.isCompiled()) {
+            System.out.println("BlackWhite Shader Error: " + blackWhiteShader.getLog());
+        }
+    }
 }

@@ -111,6 +111,8 @@ public class PracticeMenu extends Agent {
     }
 
     private void executeFinish() {
+        Board.menuOpen = false;
+        resetState();
         BoardResult results = new BoardResult();
         results.score = Board.getTotalPoints();
         results.rankScore = Board.getFinalScore();

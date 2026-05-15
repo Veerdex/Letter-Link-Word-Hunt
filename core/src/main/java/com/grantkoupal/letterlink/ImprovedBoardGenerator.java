@@ -1,6 +1,8 @@
 package com.grantkoupal.letterlink;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 /**
  * Research-backed board generator using hill climbing and simulated annealing.

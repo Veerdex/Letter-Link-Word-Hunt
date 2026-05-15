@@ -252,6 +252,7 @@ public class Board extends Agent {
         previousTile = null;
         currentTile = null;
         stringChain = "";
+        currentChainState = LetterState.UNSELECTED;
 
         // Reset counters
         totalPoints = 0;
@@ -345,6 +346,12 @@ public class Board extends Agent {
     private static boolean check(String word) {
         int index = Solver.getTreasureWords().indexOf(word);
         if (index != -1 && !wordsFound.get(index)) {
+            if(word.length() < 6){
+                SoundManager.correctSounds.get(0).render(1 + word.length() / 25f, word.length() / 25f + .75f, 0);
+            } else {
+                int soundIndex = (int)(Math.min(1, word.length() / 10f) * SoundManager.correctSounds.size());
+                SoundManager.correctSounds.get(soundIndex).render(1 + word.length() / 10f, word.length() / 10f + .75f, 0);
+            }
             wordsFound.set(index, true);
             listOfWordsFound.add(word);
             totalPoints += Solver.getWordValue(word);
@@ -355,6 +362,7 @@ public class Board extends Agent {
             }
             return true;
         }
+        SoundManager.tileSelectSounds.get((int)(SoundManager.tileSelectSounds.size() * Math.random())).render(1, .5f, 0);
         return false;
     }
 
@@ -434,6 +442,8 @@ public class Board extends Agent {
     private static void updateChainState() {
         int wordState = getWordState();
 
+        SoundManager.tileSelectSounds.get((int)(SoundManager.tileSelectSounds.size() * Math.random())).render(.5f, 1, 0);
+
         switch (wordState) {
             case 0:
                 setChainState(LetterState.COPY);
@@ -476,6 +486,7 @@ public class Board extends Agent {
             return;
         }
 
+        lastGuess = System.currentTimeMillis();
         highlightHintPath(path);
     }
 
@@ -964,9 +975,6 @@ public class Board extends Agent {
 
     @Override
     public void dispose() {
-        if (fb != null) {
-            fb.dispose();
-        }
     }
 
     // ========================================

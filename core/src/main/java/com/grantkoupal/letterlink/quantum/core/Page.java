@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.Disposable;
+import com.grantkoupal.letterlink.quantum.particle.Particle;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -130,6 +131,11 @@ public abstract class Page implements Disposable{
 
     public void add(Resize p){
         resizes.add(p);
+    }
+
+    public void add(Particle p){
+        add((Agent)p);
+        add(p.getAnimation());
     }
 
     public void remove(Resize p){
