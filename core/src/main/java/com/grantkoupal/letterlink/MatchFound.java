@@ -122,8 +122,8 @@ public class MatchFound extends Page {
                     pi.setAlpha((short) (255 - (Source.getWorldHeight() - pi.y) * 255 / (Source.getWorldHeight() / 4)));
                 }
 
-                return (multiplier == -2 && pi.y < -10) ||
-                    (multiplier == 2 && pi.y > Source.getWorldHeight() + 10) ||
+                return (multiplier == -1 && pi.y < -10) ||
+                    (multiplier == 1 && pi.y > Source.getWorldHeight() + 10) ||
                     pi.x < -Source.getWorldWidth() / 2 - 10 ||
                     pi.x > Source.getWorldWidth() / 2 + 10;
 

@@ -488,17 +488,9 @@ public abstract class Manager extends ApplicationAdapter {
 
     public static boolean isClick(){return CLICK;}
 
-    public static float getWorldWidth(){return getWidthProportion() * WIDTH;}
+    public static float getWorldWidth(){return getScreenWidth() / getScale();}
 
-    public static float getWorldHeight(){return getHeightProportion() * HEIGHT;}
-
-    public static float getWidthProportion(){
-        return Math.max(((float)Source.getScreenWidth() / Source.getScreenHeight()) / ((float)WIDTH / HEIGHT), 1);
-    }
-
-    public static float getHeightProportion(){
-        return Math.max(((float)Source.getScreenHeight() / Source.getScreenWidth()) / ((float)HEIGHT / WIDTH), 1);
-    }
+    public static float getWorldHeight(){return getScreenHeight() / getScale();}
 
     public static void setDeltaStep(float deltaStep){DELTA_STEP = deltaStep;}
 
