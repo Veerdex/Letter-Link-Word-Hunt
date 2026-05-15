@@ -27,6 +27,8 @@ public class Source extends Manager {
         saveDataEvery10Seconds();
         setRatio(1500, 3000);
 
+        //loadAssets();
+
         /*BackendHandler.startUp(new BackendHandler.StartupCallback() {
             @Override
             public void onSuccess() {
